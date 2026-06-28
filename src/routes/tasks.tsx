@@ -96,15 +96,25 @@ function TasksPage() {
             <h1 className="font-display text-[28px] font-semibold tracking-[-0.025em]">Tasks</h1>
             <p className="text-[13.5px] text-ink-soft">{tasks.length} active across {new Set(tasks.map((t) => t.category)).size} projects</p>
           </div>
-          <div className="flex items-center gap-2">
-            <Pill>All Tasks</Pill>
-            <Pill>My Tasks</Pill>
-            <Pill>Due This Week</Pill>
-            <Pill icon={<ListFilter className="h-3.5 w-3.5" />}>Priority</Pill>
-            <button onClick={() => setTaskDialogOpen(true)} className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-[10px] bg-primary text-primary-foreground text-[13px] font-medium shadow-sm hover:bg-primary/90 transition-colors">
-              <Plus className="h-4 w-4" /> New Task
-            </button>
-          </div>
+          <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
+  <Pill>All Tasks</Pill>
+
+  <Pill>My Tasks</Pill>
+
+  <Pill>Due This Week</Pill>
+
+  <Pill icon={<ListFilter className="h-3.5 w-3.5" />}>
+    Priority
+  </Pill>
+
+  <button
+    onClick={() => setTaskDialogOpen(true)}
+    className="inline-flex h-9 items-center justify-center gap-1.5 rounded-[10px] bg-primary px-3.5 text-[13px] font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 ml-auto max-sm:w-full max-sm:ml-0"
+  >
+    <Plus className="h-4 w-4" />
+    New Task
+  </button>
+</div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">

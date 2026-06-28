@@ -165,7 +165,7 @@ function CalendarPage() {
   return (
     <AppShell title="Calendar">
       <div className="space-y-5">
-        <div className="flex items-center justify-between flex-wrap gap-3">
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
           <div>
             <h1 className="font-display text-[28px] font-semibold tracking-[-0.025em]">Calendar</h1>
             <p className="text-[13.5px] text-ink-soft">
@@ -174,33 +174,67 @@ function CalendarPage() {
                 : `${weekDays[0].toLocaleDateString(undefined, { month: "short", day: "numeric" })} – ${weekDays[6].toLocaleDateString(undefined, { month: "short", day: "numeric" })}`}
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="flex rounded-[10px] bg-card border border-border p-0.5">
-              {(["Day", "Week", "Month"] as CalendarView[]).map((v) => (
-                <button
-                  key={v}
-                  type="button"
-                  onClick={() => setView(v)}
-                  className={`px-3 h-8 text-[12.5px] font-medium rounded-[8px] transition-colors ${
-                    view === v ? "bg-ink text-background" : "text-ink-soft hover:text-ink"
-                  }`}
-                >
-                  {v}
-                </button>
-              ))}
-            </div>
-            <div className="flex items-center gap-0.5 rounded-[10px] bg-card border border-border h-9 px-1">
-              <button type="button" onClick={() => moveDate(-1)} className="h-7 w-7 grid place-items-center text-ink-soft hover:text-ink"><ChevronLeft className="h-4 w-4" /></button>
-              <button type="button" onClick={today} className="h-7 px-3 text-[12.5px] font-medium text-ink">Today</button>
-              <button type="button" onClick={() => moveDate(1)} className="h-7 w-7 grid place-items-center text-ink-soft hover:text-ink"><ChevronRight className="h-4 w-4" /></button>
-            </div>
-            <button type="button" onClick={openNewEvent} className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-[10px] bg-primary text-primary-foreground text-[13px] font-medium shadow-sm hover:bg-primary/90 transition-colors">
-              <Plus className="h-4 w-4" /> Event
-            </button>
-          </div>
-        </div>
+          <div className="space-y-2">
+  {/* First Row */}
+  <div className="flex items-center gap-2 overflow-x-auto">
+    <div className="flex shrink-0 rounded-[10px] border border-border bg-card p-0.5">
+      {(["Day", "Week", "Month"] as CalendarView[]).map((v) => (
+        <button
+          key={v}
+          type="button"
+          onClick={() => setView(v)}
+          className={`h-8 rounded-[8px] px-3 text-[12.5px] font-medium transition-colors ${
+            view === v
+              ? "bg-ink text-background"
+              : "text-ink-soft hover:text-ink"
+          }`}
+        >
+          {v}
+        </button>
+      ))}
+    </div>
 
-        <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="card-soft overflow-hidden">
+    <div className="flex flex-1 items-center justify-center gap-0.5 rounded-[10px] border border-border bg-card h-9 px-2">
+      <button
+        type="button"
+        onClick={() => moveDate(-1)}
+        className="grid h-7 w-7 place-items-center"
+      >
+        <ChevronLeft className="h-4 w-4" />
+      </button>
+
+      <button
+        type="button"
+        onClick={today}
+        className="px-3 text-sm font-medium"
+      >
+        Today
+      </button>
+
+      <button
+        type="button"
+        onClick={() => moveDate(1)}
+        className="grid h-7 w-7 place-items-center"
+      >
+        <ChevronRight className="h-4 w-4" />
+      </button>
+    </div>
+  </div>
+
+  {/* Second Row */}
+  <button
+    type="button"
+    onClick={openNewEvent}
+    className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-[10px] bg-primary px-4 text-sm font-medium text-primary-foreground shadow-sm hover:bg-primary/90"
+  >
+    <Plus className="h-4 w-4" />
+    Event
+  </button>
+</div>
+
+</div>
+
+<motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="card-soft overflow-hidden">
           {visibleEvents.length === 0 ? (
             <div className="p-10 text-center text-ink-soft">
               <div className="text-[15px] font-semibold mb-2">No events yet</div>

@@ -112,7 +112,7 @@ export function AppShell({ children, title }: { children: ReactNode; title?: str
       <ExportCenterDialog open={exportOpen} onOpenChange={setExportOpen} />
       <div className="flex min-h-screen w-full">
         {/* Sidebar */}
-        <aside className="hidden lg:flex w-64 shrink-0 flex-col border-r border-border bg-sidebar">
+        <aside className="hidden lg:flex w-64 shrink-0 flex-col border-r border-border bg-sidebar h-screen overflow-y-auto">
           <div className="flex items-center gap-2 px-5 h-16 border-b border-sidebar-border min-w-0">
             <div className="h-8 w-8 rounded-[10px] bg-gradient-to-br from-primary to-violet grid place-items-center text-primary-foreground font-display font-bold text-sm shadow-sm">
               G
@@ -182,7 +182,10 @@ export function AppShell({ children, title }: { children: ReactNode; title?: str
       </Button>
     </SheetTrigger>
 
-    <SheetContent side="left" className="w-72 p-0">
+    <SheetContent
+  side="left"
+  className="flex h-screen w-[300px] flex-col overflow-hidden p-0"
+>
 
   <div className="flex h-16 items-center border-b border-sidebar-border px-5">
     <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary to-violet flex items-center justify-center text-white font-bold">
@@ -197,7 +200,7 @@ export function AppShell({ children, title }: { children: ReactNode; title?: str
     </div>
   </div>
 
-  <nav className="overflow-y-auto p-3 space-y-5">
+  <nav className="flex-1 overflow-y-auto overscroll-contain p-3 space-y-5">
 
     {modules.map((group) => (
 
