@@ -1,7 +1,14 @@
+import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { Plus, Filter, ListFilter, MoreHorizontal, MessageSquare, Paperclip, Edit2, Trash2 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { useTaskStore, useDailyChecklistStore, TaskItem } from "@/stores/useGrowthStores";
 
 export const Route = createFileRoute("/tasks")({
@@ -24,6 +31,20 @@ type Task = {
   attachments?: number;
 };
 
+const today = new Date().toISOString().slice(0, 10);
+
+const emptyTaskForm = {
+  title: "",
+  description: "",
+  priority: "Medium" as Task["priority"],
+  category: "General",
+  dueDate: today,
+  status: "Todo" as Task["status"],
+  repeat: "Never",
+  checklist: false,
+  notes: "",
+};
+
 const priorityDot: Record<Task["priority"], string> = {
   Critical: "bg-red-600",
   High: "bg-danger",
@@ -41,6 +62,9 @@ function TasksPage() {
   const toggleChecklistItem = useDailyChecklistStore((s) => s.toggleItem);
   useDailyChecklistStore((s) => s.resetIfNeeded)();
 
+  const [taskDialogOpen, setTaskDialogOpen] = useState(false);
+  const [taskForm, setTaskForm] = useState(emptyTaskForm);
+
   const cols = [
     { id: "todo", title: "To Do", tone: "bg-muted-foreground/40", tasks: tasks.filter((t) => t.status === "Todo") },
     { id: "progress", title: "In Progress", tone: "bg-primary", tasks: tasks.filter((t) => t.status === "In Progress") },
@@ -48,13 +72,20 @@ function TasksPage() {
     { id: "done", title: "Completed", tone: "bg-success", tasks: tasks.filter((t) => t.status === "Done") },
   ];
 
-  const handleNewTask = () => {
-    const title = window.prompt("Task title")?.trim();
-    if (!title) return;
-    const category = window.prompt("Category (e.g. BluConn)") || "General";
-    const priority = (window.prompt("Priority: Low, Medium, High, Critical") || "Medium") as Task["priority"];
-    const dueDate = window.prompt("Due date (YYYY-MM-DD)") || new Date().toISOString().slice(0, 10);
-    addTask({ title, category, priority, status: "Todo", dueDate, notes: "" });
+  const handleCreateTask = () => {
+    if (!taskForm.title.trim()) return;
+
+    addTask({
+      title: taskForm.title.trim(),
+      category: taskForm.category.trim() || "General",
+      priority: taskForm.priority,
+      status: taskForm.status,
+      dueDate: taskForm.dueDate || today,
+      notes: [taskForm.description.trim(), taskForm.notes.trim()].filter(Boolean).join("\n\n") || "",
+    });
+
+    setTaskDialogOpen(false);
+    setTaskForm(emptyTaskForm);
   };
 
   return (
@@ -70,7 +101,7 @@ function TasksPage() {
             <Pill>My Tasks</Pill>
             <Pill>Due This Week</Pill>
             <Pill icon={<ListFilter className="h-3.5 w-3.5" />}>Priority</Pill>
-            <button onClick={handleNewTask} className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-[10px] bg-primary text-primary-foreground text-[13px] font-medium shadow-sm hover:bg-primary/90 transition-colors">
+            <button onClick={() => setTaskDialogOpen(true)} className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-[10px] bg-primary text-primary-foreground text-[13px] font-medium shadow-sm hover:bg-primary/90 transition-colors">
               <Plus className="h-4 w-4" /> New Task
             </button>
           </div>
@@ -104,11 +135,7 @@ function TasksPage() {
                     if (window.confirm("Delete this task?")) deleteTask(t.id);
                   }} />
                 ))}
-                <button onClick={() => {
-                  const title = window.prompt("Task title")?.trim();
-                  if (!title) return;
-                  addTask({ title, category: "General", priority: "Medium", status: col.id === "done" ? "Done" : "Todo", dueDate: new Date().toISOString().slice(0,10), notes: "" });
-                }} className="w-full mt-2 rounded-[14px] border border-dashed border-border text-[12.5px] text-ink-soft/70 py-2.5 hover:bg-accent/30 hover:text-ink-soft transition-colors inline-flex items-center justify-center gap-1.5">
+                <button onClick={() => setTaskDialogOpen(true)} className="w-full mt-2 rounded-[14px] border border-dashed border-border text-[12.5px] text-ink-soft/70 py-2.5 hover:bg-accent/30 hover:text-ink-soft transition-colors inline-flex items-center justify-center gap-1.5">
                   <Plus className="h-3.5 w-3.5" /> Add Task
                 </button>
               </div>
@@ -116,6 +143,134 @@ function TasksPage() {
           ))}
         </div>
       </div>
+
+      <Dialog open={taskDialogOpen} onOpenChange={setTaskDialogOpen}>
+        <DialogContent className="max-w-[720px] w-[95vw] sm:w-[90vw] max-h-[90vh] overflow-hidden p-0 sm:rounded-[24px]">
+          <div className="flex max-h-[90vh] flex-col">
+            <DialogHeader className="border-b border-border px-6 py-5">
+              <DialogTitle className="text-[20px] font-semibold tracking-[-0.02em]">Add Task</DialogTitle>
+            </DialogHeader>
+
+            <div className="flex-1 overflow-y-auto px-6 py-6">
+              <div className="space-y-6">
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-[12px] font-medium text-ink-soft">Task Title</label>
+                    <Input
+                      className="mt-2"
+                      value={taskForm.title}
+                      placeholder="Task title"
+                      onChange={(event) => setTaskForm((current) => ({ ...current, title: event.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[12px] font-medium text-ink-soft">Description</label>
+                    <Textarea
+                      className="mt-2 min-h-[96px]"
+                      placeholder="Describe the task"
+                      value={taskForm.description}
+                      onChange={(event) => setTaskForm((current) => ({ ...current, description: event.target.value }))}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="text-[12px] font-medium text-ink-soft">Priority</label>
+                    <Select value={taskForm.priority} onValueChange={(value) => setTaskForm((current) => ({ ...current, priority: value as Task["priority"] }))}>
+                      <SelectTrigger className="mt-2">
+                        <SelectValue placeholder="Priority" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Low">Low</SelectItem>
+                        <SelectItem value="Medium">Medium</SelectItem>
+                        <SelectItem value="High">High</SelectItem>
+                        <SelectItem value="Critical">Critical</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="text-[12px] font-medium text-ink-soft">Category</label>
+                    <Input
+                      className="mt-2"
+                      value={taskForm.category}
+                      placeholder="Category"
+                      onChange={(event) => setTaskForm((current) => ({ ...current, category: event.target.value }))}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="text-[12px] font-medium text-ink-soft">Due Date</label>
+                    <Input
+                      className="mt-2"
+                      type="date"
+                      value={taskForm.dueDate}
+                      onChange={(event) => setTaskForm((current) => ({ ...current, dueDate: event.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[12px] font-medium text-ink-soft">Status</label>
+                    <Select value={taskForm.status} onValueChange={(value) => setTaskForm((current) => ({ ...current, status: value as Task["status"] }))}>
+                      <SelectTrigger className="mt-2">
+                        <SelectValue placeholder="Status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Todo">Todo</SelectItem>
+                        <SelectItem value="In Progress">In Progress</SelectItem>
+                        <SelectItem value="Blocked">Blocked</SelectItem>
+                        <SelectItem value="Review">Review</SelectItem>
+                        <SelectItem value="Done">Done</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="text-[12px] font-medium text-ink-soft">Repeat</label>
+                    <Select value={taskForm.repeat} onValueChange={(value) => setTaskForm((current) => ({ ...current, repeat: value }))}>
+                      <SelectTrigger className="mt-2">
+                        <SelectValue placeholder="Repeat" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Never">Never</SelectItem>
+                        <SelectItem value="Daily">Daily</SelectItem>
+                        <SelectItem value="Weekly">Weekly</SelectItem>
+                        <SelectItem value="Monthly">Monthly</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex items-center gap-3 rounded-[12px] border border-border/70 bg-muted/40 px-3 py-3">
+                    <Checkbox checked={taskForm.checklist} onCheckedChange={(checked) => setTaskForm((current) => ({ ...current, checklist: checked === true }))} />
+                    <label className="text-[12px] font-medium text-ink-soft">Checklist</label>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-[12px] font-medium text-ink-soft">Notes</label>
+                  <Textarea
+                    className="mt-2 min-h-[120px]"
+                    placeholder="Notes"
+                    value={taskForm.notes}
+                    onChange={(event) => setTaskForm((current) => ({ ...current, notes: event.target.value }))}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <DialogFooter className="border-t border-border px-6 py-4">
+              <Button variant="outline" onClick={() => setTaskDialogOpen(false)} type="button">
+                Cancel
+              </Button>
+              <Button onClick={handleCreateTask} type="button">
+                Create Task
+              </Button>
+            </DialogFooter>
+          </div>
+        </DialogContent>
+      </Dialog>
     </AppShell>
   );
 }

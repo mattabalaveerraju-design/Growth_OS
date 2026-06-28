@@ -83,20 +83,28 @@ function Home() {
 
   return (
     <AppShell title="Command Center">
-      <div className="mx-auto max-w-[1240px] space-y-10">
+      <div className="mx-auto w-full max-w-[1240px] px-4 sm:px-6 lg:px-4 space-y-8 lg:space-y-10 overflow-x-hidden">
         <motion.div {...fadeUp} transition={{ duration: 0.4 }}>
-          <div className="flex items-baseline justify-between flex-wrap gap-2">
-            <h1 className="font-display text-[34px] font-semibold tracking-[-0.025em] text-ink">
-              Good evening, Balu.
-            </h1>
-            <div className="text-[13px] text-ink-soft">
-              {new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}
-            </div>
-          </div>
-          <p className="mt-1 text-[15px] text-ink-soft">
-            You have {totalHours.toFixed(1)} growth hours captured in your current workspace.
-          </p>
-        </motion.div>
+  <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+    <div>
+      <h1 className="font-display text-3xl sm:text-4xl lg:text-[34px] font-semibold tracking-[-0.025em] text-ink">
+        Good evening, Balu.
+      </h1>
+
+      <p className="mt-1 text-[15px] text-ink-soft">
+        You have {totalHours.toFixed(1)} growth hours captured in your current workspace.
+      </p>
+    </div>
+
+    <div className="text-[13px] text-ink-soft">
+      {new Date().toLocaleDateString(undefined, {
+        weekday: "long",
+        month: "long",
+        day: "numeric",
+      })}
+    </div>
+  </div>
+</motion.div>
 
         <motion.section
           {...fadeUp}
@@ -106,17 +114,17 @@ function Home() {
           <div className="pointer-events-none absolute -top-32 -right-24 h-[420px] w-[420px] rounded-full bg-violet/15 blur-3xl" />
           <div className="pointer-events-none absolute -bottom-40 -left-20 h-[360px] w-[360px] rounded-full bg-primary/10 blur-3xl" />
 
-          <div className="relative grid lg:grid-cols-[1.4fr_1fr] gap-0">
-            <div className="p-8 lg:p-10">
+          <div className="relative grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-0">
+            <div className="p-5 sm:p-8 lg:p-10">
               <div className="flex items-center gap-2 text-[11px] font-semibold tracking-[0.16em] text-primary">
                 <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
                 CONTINUE WHERE YOU LEFT OFF
               </div>
 
-              <h2 className="mt-4 font-display text-[40px] leading-[1.05] font-semibold tracking-[-0.03em]">
+              <h2 className="mt-4 font-display text-3xl sm:text-4xl lg:text-[40px] leading-tight font-semibold tracking-[-0.03em]">
                 GrowthOS dashboard overview
               </h2>
-              <div className="mt-2 flex items-center gap-3 text-[13.5px] text-ink-soft">
+              <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-ink-soft">
                 <span className="inline-flex items-center gap-1.5">
                   <span className="h-1.5 w-1.5 rounded-full bg-success" />
                   {completedFocus} focus item{completedFocus === 1 ? "" : "s"} completed
@@ -164,7 +172,7 @@ function Home() {
                 </div>
               </div>
 
-              <div className="mt-6 flex items-center gap-3">
+              <div className="mt-6 flex flex-col sm:flex-row gap-3">
                 <button className="group inline-flex items-center gap-2 rounded-[14px] bg-ink text-background px-5 h-12 text-[14.5px] font-medium shadow-[var(--shadow-lifted)] hover:bg-ink/90 transition-all">
                   <Play className="h-4 w-4 fill-current" />
                   Continue working
@@ -224,8 +232,10 @@ function Home() {
           </div>
         </motion.section>
 
-        <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          <TodayFocus />
+        <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 min-w-0">
+          <div className="min-w-0">
+  <TodayFocus />
+</div>
           <ConsistencyRing />
           <DeepWork />
           <AIDailySummary />
@@ -517,20 +527,35 @@ function UpcomingDeadlines() {
   return (
     <WidgetCard title="Upcoming" icon={Clock}>
       <div className="space-y-2.5">
-        {upcoming.length ? (
-          upcoming.map((d) => (
-            <div key={d.id} className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2.5 min-w-0">
-                <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${d.priority === "High" ? "bg-danger" : "bg-ink-soft/30"}`} />
-                <span className="text-[13px] text-ink truncate">{d.title}</span>
-              </div>
-              <span className="text-[11.5px] text-ink-soft shrink-0">{new Date(d.dueDate).toLocaleDateString()}</span>
-            </div>
-          ))
-        ) : (
-          <div className="rounded-3xl border border-border p-6 text-sm text-ink-soft">No deadlines in the next 7 days.</div>
-        )}
+  {upcoming.length ? (
+    upcoming.map((d) => (
+      <div
+        key={d.id}
+        className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-2.5 min-w-0 w-full"
+      >
+       <div className="flex items-center gap-2.5 min-w-0 w-full overflow-x-auto whitespace-nowrap">
+          <span
+            className={`h-1.5 w-1.5 rounded-full shrink-0 ${
+              d.priority === "High" ? "bg-danger" : "bg-ink-soft/30"
+            }`}
+          />
+
+          <span className="text-[13px] text-ink truncate min-w-0">
+            {d.title}
+          </span>
+        </div>
+
+        <span className="text-[11.5px] text-ink-soft shrink-0 whitespace-nowrap">
+          {new Date(d.dueDate).toLocaleDateString()}
+        </span>
       </div>
+    ))
+  ) : (
+    <div className="rounded-3xl border border-border p-6 text-sm text-ink-soft">
+      No deadlines in the next 7 days.
+    </div>
+  )}
+</div>
     </WidgetCard>
   );
 }

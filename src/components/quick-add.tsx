@@ -6,11 +6,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { useTaskStore, useLearningStore, useApplicationStore, useReadingStore, useExerciseStore, useFocusStore, useGoalStore, useInterviewStore, useVaultStore, useProjectsStore, ApplicationStatus } from "@/stores/useGrowthStores";
 
 const today = new Date().toISOString().slice(0, 10);
 const defaultState = {
-  task: { title: "", category: "", priority: "Medium", status: "Todo", dueDate: today, notes: "" },
+  task: { title: "", description: "", category: "", priority: "Medium", status: "Todo", dueDate: today, notes: "" },
   learning: { topic: "", category: "", source: "", timeHours: "", notes: "", confidence: 60, date: today },
   application: { company: "", position: "", country: "", salary: "", appliedDate: today, status: "Applied" as ApplicationStatus, interviewStage: "", portfolioSent: false, notes: "" },
   reading: { book: "", pages: "", timeMinutes: "", progress: "", date: today },
@@ -49,7 +51,7 @@ export function QuickAddDialog({ open, onOpenChange }: { open: boolean; onOpenCh
         priority: values.task.priority as any,
         status: values.task.status as any,
         dueDate: values.task.dueDate,
-        notes: values.task.notes,
+        notes: [values.task.description.trim(), values.task.notes.trim()].filter(Boolean).join("\n\n") || "",
       });
       toast.success("Task added");
     }
@@ -154,55 +156,113 @@ export function QuickAddDialog({ open, onOpenChange }: { open: boolean; onOpenCh
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
-        </DialogHeader>
+      <DialogContent className="max-w-[720px] w-[95vw] sm:w-[90vw] max-h-[90vh] overflow-hidden p-0 sm:rounded-[24px]">
+        <div className="flex max-h-[90vh] flex-col">
+          <DialogHeader className="border-b border-border px-6 py-5">
+            <DialogTitle className="text-[20px] font-semibold tracking-[-0.02em]">{title}</DialogTitle>
+          </DialogHeader>
 
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as QuickTab)}>
-          <TabsList>
-            {(["Task", "Learning", "Application", "Reading", "Exercise", "Goal", "Focus", "Interview", "Vault", "Project"] as QuickTab[]).map((tab) => (
-              <TabsTrigger key={tab} value={tab}>
-                {tab}
-              </TabsTrigger>
-            ))}
-          </TabsList>
+          <div className="flex-1 overflow-y-auto px-6 py-6">
+            <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as QuickTab)}>
+              <TabsList className="mb-6 flex-wrap justify-start rounded-[12px] bg-muted/40 p-1">
+                {(["Task", "Learning", "Application", "Reading", "Exercise", "Goal", "Focus", "Interview", "Vault", "Project"] as QuickTab[]).map((tab) => (
+                  <TabsTrigger key={tab} value={tab}>
+                    {tab}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
 
-          <TabsContent value="Task">
-            <div className="grid gap-3">
-              <Input
-                value={values.task.title}
-                placeholder="Title"
-                onChange={(event) => setValues((current) => ({ ...current, task: { ...current.task, title: event.target.value } }))}
-              />
-              <Input
-                value={values.task.category}
-                placeholder="Category"
-                onChange={(event) => setValues((current) => ({ ...current, task: { ...current.task, category: event.target.value } }))}
-              />
-              <div className="grid grid-cols-2 gap-3">
-                <Input
-                  value={values.task.dueDate}
-                  type="date"
-                  onChange={(event) => setValues((current) => ({ ...current, task: { ...current.task, dueDate: event.target.value } }))}
-                />
-                <Input
-                  value={values.task.priority}
-                  placeholder="Priority"
-                  onChange={(event) => setValues((current) => ({ ...current, task: { ...current.task, priority: event.target.value as any } }))}
+          <TabsContent value="Task" className="mt-0">
+            <div className="space-y-6">
+              <div className="space-y-4">
+                <div>
+                  <label className="text-[12px] font-medium text-ink-soft">Title</label>
+                  <Input
+                    className="mt-2"
+                    value={values.task.title}
+                    placeholder="Title"
+                    onChange={(event) => setValues((current) => ({ ...current, task: { ...current.task, title: event.target.value } }))}
+                  />
+                </div>
+                <div>
+                  <label className="text-[12px] font-medium text-ink-soft">Description</label>
+                  <Textarea
+                    className="mt-2 min-h-[96px]"
+                    placeholder="Short description"
+                    value={values.task.description}
+                    onChange={(event) => setValues((current) => ({ ...current, task: { ...current.task, description: event.target.value } }))}
+                  />
+                </div>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="text-[12px] font-medium text-ink-soft">Category</label>
+                  <Input
+                    className="mt-2"
+                    value={values.task.category}
+                    placeholder="Category"
+                    onChange={(event) => setValues((current) => ({ ...current, task: { ...current.task, category: event.target.value } }))}
+                  />
+                </div>
+                <div>
+                  <label className="text-[12px] font-medium text-ink-soft">Date</label>
+                  <Input
+                    className="mt-2"
+                    value={values.task.dueDate}
+                    type="date"
+                    onChange={(event) => setValues((current) => ({ ...current, task: { ...current.task, dueDate: event.target.value } }))}
+                  />
+                </div>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="text-[12px] font-medium text-ink-soft">Priority</label>
+                  <Select
+                    value={values.task.priority}
+                    onValueChange={(value) => setValues((current) => ({ ...current, task: { ...current.task, priority: value as any } }))}
+                  >
+                    <SelectTrigger className="mt-2">
+                      <SelectValue placeholder="Priority" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Low">Low</SelectItem>
+                      <SelectItem value="Medium">Medium</SelectItem>
+                      <SelectItem value="High">High</SelectItem>
+                      <SelectItem value="Critical">Critical</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="text-[12px] font-medium text-ink-soft">Status</label>
+                  <Select
+                    value={values.task.status}
+                    onValueChange={(value) => setValues((current) => ({ ...current, task: { ...current.task, status: value as any } }))}
+                  >
+                    <SelectTrigger className="mt-2">
+                      <SelectValue placeholder="Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Todo">Todo</SelectItem>
+                      <SelectItem value="In Progress">In Progress</SelectItem>
+                      <SelectItem value="Blocked">Blocked</SelectItem>
+                      <SelectItem value="Review">Review</SelectItem>
+                      <SelectItem value="Done">Done</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[12px] font-medium text-ink-soft">Notes</label>
+                <Textarea
+                  className="mt-2 min-h-[120px]"
+                  placeholder="Notes"
+                  value={values.task.notes}
+                  onChange={(event) => setValues((current) => ({ ...current, task: { ...current.task, notes: event.target.value } }))}
                 />
               </div>
-              <Input
-                value={values.task.status}
-                placeholder="Status"
-                onChange={(event) => setValues((current) => ({ ...current, task: { ...current.task, status: event.target.value as any } }))}
-              />
-              <textarea
-                className="min-h-[120px] rounded-md border border-input bg-transparent px-3 py-2 text-sm text-foreground outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                placeholder="Notes"
-                value={values.task.notes}
-                onChange={(event) => setValues((current) => ({ ...current, task: { ...current.task, notes: event.target.value } }))}
-              />
             </div>
           </TabsContent>
 
@@ -557,16 +617,18 @@ export function QuickAddDialog({ open, onOpenChange }: { open: boolean; onOpenCh
               </select>
             </div>
           </TabsContent>
-        </Tabs>
+            </Tabs>
+          </div>
 
-        <DialogFooter>
-          <Button variant="secondary" onClick={() => onOpenChange(false)} type="button">
-            Cancel
-          </Button>
-          <Button onClick={handleSave} type="button">
-            Add {activeTab}
-          </Button>
-        </DialogFooter>
+          <DialogFooter className="border-t border-border px-6 py-4">
+            <Button variant="outline" onClick={() => onOpenChange(false)} type="button">
+              Cancel
+            </Button>
+            <Button onClick={handleSave} type="button">
+              Add {activeTab}
+            </Button>
+          </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   );
