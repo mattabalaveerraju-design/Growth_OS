@@ -3,7 +3,13 @@ import { motion } from "framer-motion";
 import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -95,7 +101,13 @@ function CalendarPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [activeEvent, setActiveEvent] = useState<CalendarEvent | null>(null);
-  const [form, setForm] = useState({ title: "", date: formatIso(new Date()), time: "09:00", category: "", notes: "" });
+  const [form, setForm] = useState({
+    title: "",
+    date: formatIso(new Date()),
+    time: "09:00",
+    category: "",
+    notes: "",
+  });
 
   const weekDays = useMemo(() => getWeekDays(currentDate), [currentDate]);
   const monthGrid = useMemo(() => getMonthGrid(currentDate), [currentDate]);
@@ -119,7 +131,13 @@ function CalendarPage() {
 
   const openEditEvent = (event: CalendarEvent) => {
     setActiveEvent(event);
-    setForm({ title: event.title, date: event.date, time: event.time ?? "09:00", category: event.category ?? "", notes: event.notes ?? "" });
+    setForm({
+      title: event.title,
+      date: event.date,
+      time: event.time ?? "09:00",
+      category: event.category ?? "",
+      notes: event.notes ?? "",
+    });
     setDialogOpen(true);
   };
 
@@ -175,91 +193,109 @@ function CalendarPage() {
             </p>
           </div>
           <div className="space-y-2">
-  {/* First Row */}
-  <div className="flex items-center gap-2 overflow-x-auto">
-    <div className="flex shrink-0 rounded-[10px] border border-border bg-card p-0.5">
-      {(["Day", "Week", "Month"] as CalendarView[]).map((v) => (
-        <button
-          key={v}
-          type="button"
-          onClick={() => setView(v)}
-          className={`h-8 rounded-[8px] px-3 text-[12.5px] font-medium transition-colors ${
-            view === v
-              ? "bg-ink text-background"
-              : "text-ink-soft hover:text-ink"
-          }`}
+            {/* First Row */}
+            <div className="flex items-center gap-2 overflow-x-auto">
+              <div className="flex shrink-0 rounded-[10px] border border-border bg-card p-0.5">
+                {(["Day", "Week", "Month"] as CalendarView[]).map((v) => (
+                  <button
+                    key={v}
+                    type="button"
+                    onClick={() => setView(v)}
+                    className={`h-8 rounded-[8px] px-3 text-[12.5px] font-medium transition-colors ${
+                      view === v ? "bg-ink text-background" : "text-ink-soft hover:text-ink"
+                    }`}
+                  >
+                    {v}
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex flex-1 items-center justify-center gap-0.5 rounded-[10px] border border-border bg-card h-9 px-2">
+                <button
+                  type="button"
+                  onClick={() => moveDate(-1)}
+                  className="grid h-7 w-7 place-items-center"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+
+                <button type="button" onClick={today} className="px-3 text-sm font-medium">
+                  Today
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => moveDate(1)}
+                  className="grid h-7 w-7 place-items-center"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Second Row */}
+            <button
+              type="button"
+              onClick={openNewEvent}
+              className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-[10px] bg-primary px-4 text-sm font-medium text-primary-foreground shadow-sm hover:bg-primary/90"
+            >
+              <Plus className="h-4 w-4" />
+              Event
+            </button>
+          </div>
+        </div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="card-soft overflow-hidden"
         >
-          {v}
-        </button>
-      ))}
-    </div>
-
-    <div className="flex flex-1 items-center justify-center gap-0.5 rounded-[10px] border border-border bg-card h-9 px-2">
-      <button
-        type="button"
-        onClick={() => moveDate(-1)}
-        className="grid h-7 w-7 place-items-center"
-      >
-        <ChevronLeft className="h-4 w-4" />
-      </button>
-
-      <button
-        type="button"
-        onClick={today}
-        className="px-3 text-sm font-medium"
-      >
-        Today
-      </button>
-
-      <button
-        type="button"
-        onClick={() => moveDate(1)}
-        className="grid h-7 w-7 place-items-center"
-      >
-        <ChevronRight className="h-4 w-4" />
-      </button>
-    </div>
-  </div>
-
-  {/* Second Row */}
-  <button
-    type="button"
-    onClick={openNewEvent}
-    className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-[10px] bg-primary px-4 text-sm font-medium text-primary-foreground shadow-sm hover:bg-primary/90"
-  >
-    <Plus className="h-4 w-4" />
-    Event
-  </button>
-</div>
-
-</div>
-
-<motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="card-soft overflow-hidden">
           {visibleEvents.length === 0 ? (
             <div className="p-10 text-center text-ink-soft">
               <div className="text-[15px] font-semibold mb-2">No events yet</div>
-              <div className="text-[13px]">Create an event to populate your calendar and keep your schedule in one place.</div>
+              <div className="text-[13px]">
+                Create an event to populate your calendar and keep your schedule in one place.
+              </div>
             </div>
           ) : view === "Month" ? (
             <div className="p-4">
               <div className="grid grid-cols-7 gap-1 text-[10px] uppercase tracking-[0.12em] text-ink-soft/70 mb-2">
-                {weekDayNames.map((day) => <div key={day}>{day}</div>)}
+                {weekDayNames.map((day) => (
+                  <div key={day}>{day}</div>
+                ))}
               </div>
               <div className="grid grid-cols-7 gap-1">
                 {monthGrid.map((cell) => {
                   const dateKey = formatIso(cell.date);
                   const dayEvents = events.filter((event) => event.date === dateKey);
                   return (
-                    <div key={`${dateKey}-${cell.currentMonth ? "current" : "other"}`} className={`min-h-[96px] rounded-[18px] p-3 ${cell.currentMonth ? "bg-card border border-border" : "bg-muted/60 text-ink-soft"}`}>
+                    <div
+                      key={`${dateKey}-${cell.currentMonth ? "current" : "other"}`}
+                      className={`min-h-[96px] rounded-[18px] p-3 ${cell.currentMonth ? "bg-card border border-border" : "bg-muted/60 text-ink-soft"}`}
+                    >
                       <div className="text-[11px] font-semibold">{cell.date.getDate()}</div>
                       <div className="mt-2 space-y-1">
                         {dayEvents.slice(0, 2).map((event) => (
-                          <button key={event.id} type="button" onClick={() => openEditEvent(event)} className="w-full rounded-[14px] bg-muted p-2 text-left text-[11px] font-medium text-ink-soft hover:bg-accent/30">
+                          <button
+                            key={event.id}
+                            type="button"
+                            onClick={() => openEditEvent(event)}
+                            className="w-full rounded-[14px] bg-muted p-2 text-left text-[11px] font-medium text-ink-soft hover:bg-accent/30"
+                          >
                             <div className="truncate">{event.title}</div>
-                            {event.time && <div className="text-[10px] text-ink-soft/80">{toTimeLabel(event.time)}</div>}
+                            {event.time && (
+                              <div className="text-[10px] text-ink-soft/80">
+                                {toTimeLabel(event.time)}
+                              </div>
+                            )}
                           </button>
                         ))}
-                        {dayEvents.length > 2 && <div className="text-[10px] text-ink-soft/80">+{dayEvents.length - 2} more</div>}
+                        {dayEvents.length > 2 && (
+                          <div className="text-[10px] text-ink-soft/80">
+                            +{dayEvents.length - 2} more
+                          </div>
+                        )}
                       </div>
                     </div>
                   );
@@ -270,9 +306,16 @@ function CalendarPage() {
             <div className="grid grid-cols-[56px_repeat(7,1fr)] border-b border-border">
               <div className="px-2 py-3 text-[10.5px] text-ink-soft/60" />
               {weekDays.map((day) => (
-                <div key={day.toISOString()} className="px-3 py-3 text-[12px] font-medium text-ink-soft">
-                  <div className="text-[10.5px] tracking-wide uppercase">{day.toLocaleDateString(undefined, { weekday: "short" })}</div>
-                  <div className="text-[18px] font-display font-semibold text-ink">{day.getDate()}</div>
+                <div
+                  key={day.toISOString()}
+                  className="px-3 py-3 text-[12px] font-medium text-ink-soft"
+                >
+                  <div className="text-[10.5px] tracking-wide uppercase">
+                    {day.toLocaleDateString(undefined, { weekday: "short" })}
+                  </div>
+                  <div className="text-[18px] font-display font-semibold text-ink">
+                    {day.getDate()}
+                  </div>
                 </div>
               ))}
 
@@ -280,7 +323,9 @@ function CalendarPage() {
                 const hour = 9 + index;
                 return (
                   <div key={hour} className="border-t border-border/60">
-                    <div className="h-[60px] px-2 pr-3 text-right pt-1 text-[10.5px] text-ink-soft/60">{hour <= 12 ? `${hour} AM` : `${hour - 12} PM`}</div>
+                    <div className="h-[60px] px-2 pr-3 text-right pt-1 text-[10.5px] text-ink-soft/60">
+                      {hour <= 12 ? `${hour} AM` : `${hour - 12} PM`}
+                    </div>
                   </div>
                 );
               })}
@@ -318,53 +363,93 @@ function CalendarPage() {
       </div>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-3xl">
-          <DialogHeader>
-            <DialogTitle>{activeEvent ? "Edit Event" : "Add Event"}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 pt-2">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div>
-                <label className="text-[12px] font-medium text-ink-soft">Title</label>
-                <Input value={form.title} onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))} />
-              </div>
-              <div>
-                <label className="text-[12px] font-medium text-ink-soft">Date</label>
-                <Input type="date" value={form.date} onChange={(event) => setForm((current) => ({ ...current, date: event.target.value }))} />
+        <DialogContent className="w-[calc(100vw-24px)] max-w-3xl overflow-hidden p-0 sm:rounded-[24px]">
+          <div className="flex max-h-[calc(100vh-24px)] flex-col">
+            <DialogHeader className="px-4 py-4 sm:px-6">
+              <DialogTitle>{activeEvent ? "Edit Event" : "Add Event"}</DialogTitle>
+            </DialogHeader>
+            <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-6">
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="text-[12px] font-medium text-ink-soft">Title</label>
+                    <Input
+                      value={form.title}
+                      onChange={(event) =>
+                        setForm((current) => ({ ...current, title: event.target.value }))
+                      }
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[12px] font-medium text-ink-soft">Date</label>
+                    <Input
+                      type="date"
+                      value={form.date}
+                      onChange={(event) =>
+                        setForm((current) => ({ ...current, date: event.target.value }))
+                      }
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="text-[12px] font-medium text-ink-soft">Time</label>
+                    <Input
+                      type="time"
+                      value={form.time}
+                      onChange={(event) =>
+                        setForm((current) => ({ ...current, time: event.target.value }))
+                      }
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[12px] font-medium text-ink-soft">Category</label>
+                    <Input
+                      value={form.category}
+                      onChange={(event) =>
+                        setForm((current) => ({ ...current, category: event.target.value }))
+                      }
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-[12px] font-medium text-ink-soft">Notes</label>
+                  <textarea
+                    value={form.notes}
+                    onChange={(event) =>
+                      setForm((current) => ({ ...current, notes: event.target.value }))
+                    }
+                    className="mt-2 min-h-[120px] w-full resize-none rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  />
+                </div>
               </div>
             </div>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div>
-                <label className="text-[12px] font-medium text-ink-soft">Time</label>
-                <Input type="time" value={form.time} onChange={(event) => setForm((current) => ({ ...current, time: event.target.value }))} />
-              </div>
-              <div>
-                <label className="text-[12px] font-medium text-ink-soft">Category</label>
-                <Input value={form.category} onChange={(event) => setForm((current) => ({ ...current, category: event.target.value }))} />
-              </div>
-            </div>
-            <div>
-              <label className="text-[12px] font-medium text-ink-soft">Notes</label>
-              <textarea
-                value={form.notes}
-                onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))}
-                className="mt-2 min-h-[120px] w-full resize-none rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <button type="button" onClick={() => setDialogOpen(false)} className="h-9 rounded-[10px] border border-border px-4 text-sm text-ink-soft hover:bg-muted">
-              Cancel
-            </button>
-            {activeEvent && (
-              <button type="button" onClick={() => setDeleteOpen(true)} className="h-9 rounded-[10px] border border-danger px-4 text-sm text-danger hover:bg-danger/10">
-                Delete
+            <DialogFooter className="border-t border-border px-4 py-4 sm:px-6">
+              <button
+                type="button"
+                onClick={() => setDialogOpen(false)}
+                className="h-9 rounded-[10px] border border-border px-4 text-sm text-ink-soft hover:bg-muted"
+              >
+                Cancel
               </button>
-            )}
-            <button type="button" onClick={handleSave} className="h-9 rounded-[10px] bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90">
-              Save
-            </button>
-          </DialogFooter>
+              {activeEvent && (
+                <button
+                  type="button"
+                  onClick={() => setDeleteOpen(true)}
+                  className="h-9 rounded-[10px] border border-danger px-4 text-sm text-danger hover:bg-danger/10"
+                >
+                  Delete
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={handleSave}
+                className="h-9 rounded-[10px] bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+              >
+                Save
+              </button>
+            </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -372,7 +457,9 @@ function CalendarPage() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Event</AlertDialogTitle>
-            <AlertDialogDescription>Are you sure you want to delete this event?</AlertDialogDescription>
+            <AlertDialogDescription>
+              Are you sure you want to delete this event?
+            </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setDeleteOpen(false)}>Cancel</AlertDialogCancel>

@@ -1,9 +1,24 @@
-import { useMemo, useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useMemo, useState } from "react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { Search, Filter, Plus, Flame, ChevronLeft, ChevronRight, GraduationCap } from "lucide-react";
+import {
+  Search,
+  Filter,
+  Plus,
+  Flame,
+  ChevronLeft,
+  ChevronRight,
+  GraduationCap,
+  Trash2,
+} from "lucide-react";
 import { AppShell } from "@/components/app-shell";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,6 +32,20 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useLearningStore, LearningItem } from "@/stores/useGrowthStores";
+import { ResourceGrid } from "@/components/resource-grid";
+import type { ResourceItem } from "@/lib/resource-types";
+import {
+  type CloudCardRecord,
+  type CloudFileRecord,
+  deleteCloudCard,
+  deleteCloudFile,
+  hasSupabaseConfig,
+  listCloudCards,
+  listCloudFiles,
+  updateCloudCardProgress,
+  uploadCloudFile,
+  upsertCloudCard,
+} from "@/lib/cloud-data";
 
 export const Route = createFileRoute("/learning")({
   head: () => ({ meta: [{ title: "Learning — GrowthOS" }] }),
@@ -32,7 +61,24 @@ const categoryColors: Record<string, string> = {
   Career: "bg-[oklch(0.95_0.05_140)] text-[oklch(0.42_0.16_150)]",
 };
 
+const mapCloudCardToLearning = (card: CloudCardRecord): LearningItem => {
+  const metadata = (card.metadata ?? {}) as Record<string, unknown>;
+  return {
+    id: card.id,
+    topic: card.title,
+    category: typeof card.category === "string" ? card.category : "Career",
+    source: typeof card.summary === "string" ? card.summary : "",
+    timeHours: Number(metadata.timeHours ?? 0),
+    notes: typeof card.content === "string" ? card.content : "",
+    confidence: Number(metadata.confidence ?? 50),
+    date: String(
+      metadata.date ?? card.created_at?.slice(0, 10) ?? new Date().toISOString().slice(0, 10),
+    ),
+  };
+};
+
 function LearningPage() {
+  const navigate = useNavigate();
   const learning = useLearningStore((state) => state.learning);
   const addLearning = useLearningStore((state) => state.addLearning);
   const updateLearning = useLearningStore((state) => state.updateLearning);
@@ -52,26 +98,134 @@ function LearningPage() {
     confidence: 50,
     date: new Date().toISOString().slice(0, 10),
   });
+  const [cloudEnabled, setCloudEnabled] = useState(hasSupabaseConfig);
+  const [cloudItems, setCloudItems] = useState<CloudCardRecord[]>([]);
+  const [cloudStatus, setCloudStatus] = useState(
+    hasSupabaseConfig ? "Cloud sync ready" : "Cloud sync not configured",
+  );
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [existingFiles, setExistingFiles] = useState<CloudFileRecord[]>([]);
+
+  useEffect(() => {
+    if (!hasSupabaseConfig) {
+      setCloudEnabled(false);
+      setCloudStatus("Cloud sync not configured");
+      return;
+    }
+
+    let active = true;
+    setCloudEnabled(true);
+    setCloudStatus("Connecting to cloud workspace...");
+    listCloudCards("learning").then((cards) => {
+      if (!active) return;
+      setCloudItems(cards);
+      setCloudStatus(cards.length ? "Cloud sync ready" : "Cloud sync ready — add your first card");
+    });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!cloudEnabled || !activeLearning?.id || !dialogOpen) {
+      setExistingFiles([]);
+      return;
+    }
+
+    let active = true;
+    listCloudFiles("learning", activeLearning.id).then((files) => {
+      if (!active) return;
+      setExistingFiles(files);
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [activeLearning?.id, cloudEnabled, dialogOpen]);
+
+  const visibleLearning = useMemo(
+    () => (cloudEnabled ? cloudItems.map(mapCloudCardToLearning) : learning),
+    [cloudEnabled, cloudItems, learning],
+  );
+
+  const resourceItems = useMemo<ResourceItem[]>(() => {
+    if (cloudEnabled) {
+      return cloudItems.map((card) => ({
+        ...mapCloudCardToLearning(card),
+        id: card.id,
+        module: "learning" as const,
+        title: card.title,
+        description: typeof card.summary === "string" ? card.summary : undefined,
+        category: typeof card.category === "string" ? card.category : undefined,
+        tags: Array.isArray((card.metadata ?? {}).tags)
+          ? ((card.metadata ?? {}).tags as string[])
+          : undefined,
+        favorite: Boolean((card.metadata ?? {}).favorite),
+        notes: typeof card.content === "string" ? card.content : undefined,
+        source: typeof card.summary === "string" ? card.summary : undefined,
+        confidence: Number((card.metadata ?? {}).confidence ?? 0),
+        timeHours: Number((card.metadata ?? {}).timeHours ?? 0),
+        createdAt: card.created_at ?? undefined,
+        updatedAt: card.updated_at ?? undefined,
+        lastOpenedAt:
+          typeof (card.metadata ?? {}).lastOpenedAt === "string"
+            ? (card.metadata ?? {}).lastOpenedAt
+            : undefined,
+        currentPage:
+          typeof (card.metadata ?? {}).currentPage === "number"
+            ? (card.metadata ?? {}).currentPage
+            : undefined,
+        progressPercentage:
+          typeof (card.metadata ?? {}).progressPercentage === "number"
+            ? (card.metadata ?? {}).progressPercentage
+            : undefined,
+      }));
+    }
+
+    return learning.map((item) => ({
+      id: item.id,
+      module: "learning" as const,
+      title: item.topic,
+      description: item.source,
+      category: item.category,
+      tags: [item.category],
+      favorite: item.favorite,
+      notes: item.notes,
+      source: item.source,
+      confidence: item.confidence,
+      timeHours: item.timeHours,
+      createdAt: item.date,
+      updatedAt: item.date,
+      lastOpenedAt: item.lastOpenedAt,
+      currentPage: item.currentPage,
+      progressPercentage: item.progressPercentage,
+    }));
+  }, [cloudEnabled, cloudItems, learning]);
 
   const filteredLearning = useMemo(
     () =>
-      learning
+      resourceItems
         .filter((item) =>
-          [item.topic, item.category, item.source, item.notes]
+          [item.title, item.category, item.description, item.notes, item.source]
             .join(" ")
             .toLowerCase()
             .includes(search.toLowerCase()),
         )
         .filter((item) => (filterCategory === "All" ? true : item.category === filterCategory)),
-    [learning, search, filterCategory],
+    [resourceItems, search, filterCategory],
   );
 
-  const totalHours = learning.reduce((sum, item) => sum + item.timeHours, 0);
-  const learningDays = Array.from(new Set(learning.map((item) => item.date))).length;
+  const totalHours = filteredLearning.reduce((sum, item) => sum + (item.timeHours ?? 0), 0);
+  const learningDays = Array.from(
+    new Set(resourceItems.map((item) => item.createdAt?.slice(0, 10)).filter(Boolean)),
+  ).length;
   const completedPercent = totalHours ? Math.min(100, Math.round((totalHours / 10) * 100)) : 0;
 
   const openNew = () => {
     setActiveLearning(null);
+    setSelectedFile(null);
+    setExistingFiles([]);
     setFormState({
       topic: "",
       category: "UI Design",
@@ -86,6 +240,8 @@ function LearningPage() {
 
   const openEdit = (item: LearningItem) => {
     setActiveLearning(item);
+    setSelectedFile(null);
+    setExistingFiles([]);
     setFormState({
       topic: item.topic,
       category: item.category,
@@ -98,26 +254,96 @@ function LearningPage() {
     setDialogOpen(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const normalizedTopic = formState.topic.trim();
     const normalizedSource = formState.source.trim();
     if (!normalizedTopic || !normalizedSource) return;
+
+    if (cloudEnabled) {
+      const saved = await upsertCloudCard("learning", {
+        id: activeLearning?.id,
+        title: normalizedTopic,
+        category: formState.category,
+        content: formState.notes ?? "",
+        summary: normalizedSource,
+        metadata: {
+          source: normalizedSource,
+          timeHours: formState.timeHours,
+          confidence: formState.confidence,
+          date: formState.date,
+        },
+      });
+
+      if (saved) {
+        setCloudItems((prev) => {
+          const next = prev.filter((item) => item.id !== saved.id);
+          return [saved, ...next];
+        });
+        if (selectedFile) {
+          await uploadCloudFile("learning", saved.id, selectedFile);
+          const files = await listCloudFiles("learning", saved.id);
+          setExistingFiles(files);
+        }
+        setDialogOpen(false);
+        setSelectedFile(null);
+        setActiveLearning(null);
+      }
+      return;
+    }
+
     if (activeLearning) {
-      updateLearning(activeLearning.id, { ...formState, topic: normalizedTopic, source: normalizedSource });
+      updateLearning(activeLearning.id, {
+        ...formState,
+        topic: normalizedTopic,
+        source: normalizedSource,
+      });
     } else {
       addLearning({ ...formState, topic: normalizedTopic, source: normalizedSource });
     }
     setDialogOpen(false);
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!activeLearning) return;
+    if (cloudEnabled) {
+      await deleteCloudCard("learning", activeLearning.id);
+      setCloudItems((prev) => prev.filter((item) => item.id !== activeLearning.id));
+      setDeleteOpen(false);
+      setDialogOpen(false);
+      setActiveLearning(null);
+      return;
+    }
+
     deleteLearning(activeLearning.id);
     setDeleteOpen(false);
     setDialogOpen(false);
   };
 
-  const miniCalendarDays = learning.map((item) => new Date(item.date).getDate());
+  const removeAttachment = async (fileId: string) => {
+    if (!cloudEnabled || !activeLearning?.id) return;
+    await deleteCloudFile(fileId);
+    const files = await listCloudFiles("learning", activeLearning.id);
+    setExistingFiles(files);
+  };
+
+  const handleFavoriteToggle = async (item: ResourceItem) => {
+    if (cloudEnabled) {
+      const updated = await updateCloudCardProgress("learning", item.id, {
+        favorite: !item.favorite,
+        metadata: { favorite: !item.favorite },
+      });
+      if (updated) {
+        setCloudItems((prev) =>
+          prev.map((card) => (card.id === item.id ? { ...card, ...updated } : card)),
+        );
+      }
+      return;
+    }
+
+    updateLearning(item.id, { favorite: !item.favorite });
+  };
+
+  const miniCalendarDays = visibleLearning.map((item) => new Date(item.date).getDate());
 
   return (
     <AppShell title="Learning OS">
@@ -134,6 +360,10 @@ function LearningPage() {
           >
             <Plus className="h-4 w-4" /> Add Learning
           </button>
+        </div>
+
+        <div className="rounded-[12px] border border-border/70 bg-card/80 px-3 py-2 text-[12px] text-ink-soft">
+          {cloudStatus}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-5">
@@ -167,7 +397,9 @@ function LearningPage() {
                   type="button"
                   onClick={() => setFilterCategory(t)}
                   className={`px-3 h-7 rounded-full text-[12px] font-medium transition-colors ${
-                    filterCategory === t ? "bg-ink text-background" : "text-ink-soft hover:bg-accent/40"
+                    filterCategory === t
+                      ? "bg-ink text-background"
+                      : "text-ink-soft hover:bg-accent/40"
                   }`}
                 >
                   {t}
@@ -176,64 +408,12 @@ function LearningPage() {
             </div>
 
             {filteredLearning.length ? (
-              <div className="overflow-x-auto -mx-2">
-                <table className="w-full text-[13px]">
-                  <thead>
-                    <tr className="text-[10.5px] font-semibold tracking-[0.12em] text-ink-soft/70 uppercase">
-                      <th className="text-left px-2 py-2 font-semibold">Topic</th>
-                      <th className="text-left px-2 py-2 font-semibold">Category</th>
-                      <th className="text-left px-2 py-2 font-semibold">Time</th>
-                      <th className="text-left px-2 py-2 font-semibold">Confidence</th>
-                      <th className="text-right px-2 py-2 font-semibold">Revision Date</th>
-                      <th className="px-2 py-2" />
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredLearning.map((item) => (
-                      <tr key={item.id} className="border-t border-border/60 hover:bg-muted/40 transition-colors">
-                        <td className="px-2 py-3.5 font-semibold text-ink">{item.topic}</td>
-                        <td className="px-2 py-3.5">
-                          <span className={`inline-block text-[10.5px] font-medium px-2 py-0.5 rounded-full ${categoryColors[item.category] ?? "bg-muted text-ink-soft"}`}>
-                            {item.category}
-                          </span>
-                        </td>
-                        <td className="px-2 py-3.5 text-ink-soft">{item.timeHours.toFixed(1)}h</td>
-                        <td className="px-2 py-3.5">
-                          <div className="flex items-center gap-2">
-                            <div className="h-1.5 w-20 rounded-full bg-muted overflow-hidden">
-                              <div className="h-full bg-gradient-to-r from-primary to-violet" style={{ width: `${item.confidence}%` }} />
-                            </div>
-                            <span className="text-[11.5px] text-ink-soft tabular-nums">{item.confidence}%</span>
-                          </div>
-                        </td>
-                        <td className="px-2 py-3.5 text-right text-ink-soft">{item.date}</td>
-                        <td className="px-2 py-3.5 text-right">
-                          <div className="inline-flex items-center gap-2">
-                            <button
-                              type="button"
-                              onClick={() => openEdit(item)}
-                              className="text-ink-soft/70 hover:text-ink"
-                            >
-                              Edit
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setActiveLearning(item);
-                                setDeleteOpen(true);
-                              }}
-                              className="text-destructive hover:text-destructive-foreground"
-                            >
-                              Delete
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : learning.length ? (
+              <ResourceGrid
+                items={filteredLearning}
+                onOpen={(item) => navigate({ to: "/learning/$id", params: { id: item.id } })}
+                onFavorite={handleFavoriteToggle}
+              />
+            ) : visibleLearning.length ? (
               <div className="rounded-3xl border border-border p-6 text-sm text-ink-soft text-center">
                 No results match your search.
               </div>
@@ -252,11 +432,15 @@ function LearningPage() {
               className="card-soft p-5"
             >
               <div className="flex items-center justify-between">
-                <div className="text-[11.5px] font-semibold tracking-[0.12em] text-ink-soft/80 uppercase">Learning Streak</div>
+                <div className="text-[11.5px] font-semibold tracking-[0.12em] text-ink-soft/80 uppercase">
+                  Learning Streak
+                </div>
                 <Flame className="h-3.5 w-3.5 text-warning" />
               </div>
               <div className="mt-3 text-center py-3">
-                <div className="font-display text-[44px] font-semibold tracking-tight leading-none">{Math.min(30, learningDays)}</div>
+                <div className="font-display text-[44px] font-semibold tracking-tight leading-none">
+                  {Math.min(30, learningDays)}
+                </div>
                 <div className="text-[12px] text-ink-soft mt-1">days</div>
               </div>
               <MiniCalendar completed={miniCalendarDays} />
@@ -268,11 +452,19 @@ function LearningPage() {
               transition={{ duration: 0.4, delay: 0.1 }}
               className="card-soft p-5"
             >
-              <div className="text-[11.5px] font-semibold tracking-[0.12em] text-ink-soft/80 uppercase">Today's Learning</div>
+              <div className="text-[11.5px] font-semibold tracking-[0.12em] text-ink-soft/80 uppercase">
+                Today's Learning
+              </div>
               <div className="mt-3 flex items-center gap-3">
                 <div className="relative h-14 w-14 shrink-0">
                   <svg className="h-full w-full -rotate-90" viewBox="0 0 36 36">
-                    <circle cx="18" cy="18" r="14" strokeWidth="3" className="fill-none stroke-muted" />
+                    <circle
+                      cx="18"
+                      cy="18"
+                      r="14"
+                      strokeWidth="3"
+                      className="fill-none stroke-muted"
+                    />
                     <circle
                       cx="18"
                       cy="18"
@@ -280,14 +472,23 @@ function LearningPage() {
                       strokeWidth="3"
                       strokeLinecap="round"
                       className="fill-none stroke-violet"
-                      style={{ strokeDasharray: 88, strokeDashoffset: 88 - (88 * completedPercent) / 100 }}
+                      style={{
+                        strokeDasharray: 88,
+                        strokeDashoffset: 88 - (88 * completedPercent) / 100,
+                      }}
                     />
                   </svg>
-                  <div className="absolute inset-0 grid place-items-center text-[11px] font-semibold">{completedPercent}%</div>
+                  <div className="absolute inset-0 grid place-items-center text-[11px] font-semibold">
+                    {completedPercent}%
+                  </div>
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="text-[13.5px] font-semibold">{learning[0]?.topic ?? "No topics yet"}</div>
-                  <div className="text-[12px] text-ink-soft">{learning[0]?.category ?? "Add a topic to begin"}</div>
+                  <div className="text-[13.5px] font-semibold">
+                    {visibleLearning[0]?.topic ?? "No topics yet"}
+                  </div>
+                  <div className="text-[12px] text-ink-soft">
+                    {visibleLearning[0]?.category ?? "Add a topic to begin"}
+                  </div>
                 </div>
               </div>
               <button
@@ -303,77 +504,126 @@ function LearningPage() {
       </div>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-3xl">
-          <DialogHeader>
-            <DialogTitle>{activeLearning ? "Edit Learning" : "Add Learning"}</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4">
-            <Input
-              value={formState.topic}
-              onChange={(event) => setFormState((prev) => ({ ...prev, topic: event.target.value }))}
-              placeholder="Topic"
-            />
-            <Input
-              value={formState.source}
-              onChange={(event) => setFormState((prev) => ({ ...prev, source: event.target.value }))}
-              placeholder="Source"
-            />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <select
-                value={formState.category}
-                onChange={(event) => setFormState((prev) => ({ ...prev, category: event.target.value }))}
-                className="rounded-[10px] border border-border bg-background px-3 py-2 text-sm text-ink outline-none focus:ring-2 focus:ring-primary/30"
+        <DialogContent className="w-[calc(100vw-24px)] max-w-3xl overflow-hidden p-0 sm:rounded-[24px]">
+          <div className="flex max-h-[calc(100vh-24px)] flex-col">
+            <DialogHeader className="px-4 py-4 sm:px-6">
+              <DialogTitle>{activeLearning ? "Edit Learning" : "Add Learning"}</DialogTitle>
+            </DialogHeader>
+            <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-6">
+              <div className="grid gap-4">
+                <Input
+                  value={formState.topic}
+                  onChange={(event) =>
+                    setFormState((prev) => ({ ...prev, topic: event.target.value }))
+                  }
+                  placeholder="Topic"
+                />
+                <Input
+                  value={formState.source}
+                  onChange={(event) =>
+                    setFormState((prev) => ({ ...prev, source: event.target.value }))
+                  }
+                  placeholder="Source"
+                />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <select
+                    value={formState.category}
+                    onChange={(event) =>
+                      setFormState((prev) => ({ ...prev, category: event.target.value }))
+                    }
+                    className="rounded-[10px] border border-border bg-background px-3 py-2 text-sm text-ink outline-none focus:ring-2 focus:ring-primary/30"
+                  >
+                    {categories.map((category) => (
+                      <option key={category} value={category}>
+                        {category}
+                      </option>
+                    ))}
+                  </select>
+                  <Input
+                    type="number"
+                    min={0}
+                    step={0.1}
+                    value={formState.timeHours}
+                    onChange={(event) =>
+                      setFormState((prev) => ({ ...prev, timeHours: Number(event.target.value) }))
+                    }
+                    placeholder="Hours"
+                  />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <Input
+                    type="number"
+                    min={0}
+                    max={100}
+                    value={formState.confidence}
+                    onChange={(event) =>
+                      setFormState((prev) => ({ ...prev, confidence: Number(event.target.value) }))
+                    }
+                    placeholder="Confidence (%)"
+                  />
+                  <Input
+                    type="date"
+                    value={formState.date}
+                    onChange={(event) =>
+                      setFormState((prev) => ({ ...prev, date: event.target.value }))
+                    }
+                  />
+                </div>
+                <Textarea
+                  value={formState.notes}
+                  onChange={(event) =>
+                    setFormState((prev) => ({ ...prev, notes: event.target.value }))
+                  }
+                  placeholder="Notes"
+                />
+                {cloudEnabled ? (
+                  <div className="space-y-2 rounded-[12px] border border-border/70 bg-muted/30 p-3">
+                    <label className="text-[12px] font-medium text-ink-soft">Attach a file</label>
+                    <input
+                      type="file"
+                      onChange={(event) => setSelectedFile(event.target.files?.[0] ?? null)}
+                      className="block w-full text-[12px] text-ink-soft"
+                    />
+                    {existingFiles.length ? (
+                      <div className="space-y-2">
+                        {existingFiles.map((file) => (
+                          <div
+                            key={file.id}
+                            className="flex items-center justify-between rounded-[10px] border border-border/70 bg-background px-2.5 py-2 text-[12px]"
+                          >
+                            <span className="truncate">{file.file_name}</span>
+                            <button
+                              type="button"
+                              onClick={() => removeAttachment(file.id)}
+                              className="text-destructive"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
+              </div>
+            </div>
+            <DialogFooter className="border-t border-border px-4 py-4 sm:px-6">
+              <button
+                type="button"
+                onClick={() => setDialogOpen(false)}
+                className="h-9 rounded-[10px] border border-border px-4 text-sm text-ink-soft hover:bg-muted"
               >
-                {categories.map((category) => (
-                  <option key={category} value={category}>{category}</option>
-                ))}
-              </select>
-              <Input
-                type="number"
-                min={0}
-                step={0.1}
-                value={formState.timeHours}
-                onChange={(event) => setFormState((prev) => ({ ...prev, timeHours: Number(event.target.value) }))}
-                placeholder="Hours"
-              />
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <Input
-                type="number"
-                min={0}
-                max={100}
-                value={formState.confidence}
-                onChange={(event) => setFormState((prev) => ({ ...prev, confidence: Number(event.target.value) }))}
-                placeholder="Confidence (%)"
-              />
-              <Input
-                type="date"
-                value={formState.date}
-                onChange={(event) => setFormState((prev) => ({ ...prev, date: event.target.value }))}
-              />
-            </div>
-            <Textarea
-              value={formState.notes}
-              onChange={(event) => setFormState((prev) => ({ ...prev, notes: event.target.value }))}
-              placeholder="Notes"
-            />
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSave}
+                className="h-9 rounded-[10px] bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+              >
+                Save
+              </button>
+            </DialogFooter>
           </div>
-          <DialogFooter>
-            <button
-              type="button"
-              onClick={() => setDialogOpen(false)}
-              className="h-9 rounded-[10px] border border-border px-4 text-sm text-ink-soft hover:bg-muted"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={handleSave}
-              className="h-9 rounded-[10px] bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-            >
-              Save
-            </button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -381,7 +631,9 @@ function LearningPage() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete learning record</AlertDialogTitle>
-            <AlertDialogDescription>Are you sure you want to delete this learning entry?</AlertDialogDescription>
+            <AlertDialogDescription>
+              Are you sure you want to delete this learning entry?
+            </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setDeleteOpen(false)}>Cancel</AlertDialogCancel>
@@ -400,9 +652,13 @@ function MiniCalendar({ completed }: { completed: number[] }) {
   return (
     <div className="mt-4">
       <div className="flex items-center justify-between mb-2">
-        <button className="text-ink-soft/60 hover:text-ink-soft"><ChevronLeft className="h-3.5 w-3.5" /></button>
+        <button className="text-ink-soft/60 hover:text-ink-soft">
+          <ChevronLeft className="h-3.5 w-3.5" />
+        </button>
         <div className="text-[12px] font-semibold">{monthName}</div>
-        <button className="text-ink-soft/60 hover:text-ink-soft"><ChevronRight className="h-3.5 w-3.5" /></button>
+        <button className="text-ink-soft/60 hover:text-ink-soft">
+          <ChevronRight className="h-3.5 w-3.5" />
+        </button>
       </div>
       <div className="grid grid-cols-7 gap-1 text-center text-[10px] text-ink-soft/60 mb-1">
         {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
@@ -417,8 +673,8 @@ function MiniCalendar({ completed }: { completed: number[] }) {
               day === today
                 ? "bg-primary text-primary-foreground font-semibold"
                 : completed.includes(day)
-                ? "bg-violet/20 text-violet font-medium"
-                : "text-ink-soft/70"
+                  ? "bg-violet/20 text-violet font-medium"
+                  : "text-ink-soft/70"
             }`}
           >
             {day}

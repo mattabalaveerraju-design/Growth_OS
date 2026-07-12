@@ -3,7 +3,13 @@ import { createFileRoute } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { Plus, Search, Trash2, Calendar } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -46,7 +52,11 @@ function ProjectsPage() {
   const filteredProjects = useMemo(
     () =>
       projects.filter((item) =>
-        [item.title, item.description].filter(Boolean).join(" ").toLowerCase().includes(search.toLowerCase()),
+        [item.title, item.description]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase()
+          .includes(search.toLowerCase()),
       ),
     [projects, search],
   );
@@ -115,7 +125,9 @@ function ProjectsPage() {
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
             <h1 className="font-display text-[28px] font-semibold tracking-[-0.025em]">Projects</h1>
-            <p className="text-[13.5px] text-ink-soft">Manage your projects from planning through completion</p>
+            <p className="text-[13.5px] text-ink-soft">
+              Manage your projects from planning through completion
+            </p>
           </div>
           <button
             type="button"
@@ -154,15 +166,24 @@ function ProjectsPage() {
                     </h3>
                     <div className="space-y-2">
                       {projectsByStatus[status].map((project) => (
-                        <div key={project.id} className="rounded-[14px] border border-border/60 p-4 hover:border-border transition-colors">
+                        <div
+                          key={project.id}
+                          className="rounded-[14px] border border-border/60 p-4 hover:border-border transition-colors"
+                        >
                           <div className="flex items-start justify-between gap-3 mb-2">
                             <div className="flex-1 min-w-0">
-                              <h3 className="font-semibold text-ink text-[14px]">{project.title}</h3>
+                              <h3 className="font-semibold text-ink text-[14px]">
+                                {project.title}
+                              </h3>
                               {project.description && (
-                                <p className="text-[12px] text-ink-soft mt-0.5 line-clamp-2">{project.description}</p>
+                                <p className="text-[12px] text-ink-soft mt-0.5 line-clamp-2">
+                                  {project.description}
+                                </p>
                               )}
                             </div>
-                            <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${statusColors[status as ProjectStatus]}`}>
+                            <span
+                              className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${statusColors[status as ProjectStatus]}`}
+                            >
                               {status}
                             </span>
                           </div>
@@ -221,48 +242,58 @@ function ProjectsPage() {
       </div>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>{activeProject ? "Edit Project" : "Add Project"}</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4">
-            <Input
-              value={formState.title}
-              onChange={(event) => setFormState((prev) => ({ ...prev, title: event.target.value }))}
-              placeholder="Project title"
-            />
-            <Textarea
-              value={formState.description || ""}
-              onChange={(event) => setFormState((prev) => ({ ...prev, description: event.target.value }))}
-              placeholder="Project description"
-            />
-            <select
-              value={formState.status}
-              onChange={(event) => setFormState((prev) => ({ ...prev, status: event.target.value }))}
-              className="rounded-[10px] border border-border bg-background px-3 py-2 text-sm text-ink outline-none focus:ring-2 focus:ring-primary/30"
-            >
-              <option value="Planning">Planning</option>
-              <option value="Active">Active</option>
-              <option value="Review">Review</option>
-              <option value="Completed">Completed</option>
-            </select>
+        <DialogContent className="w-[calc(100vw-24px)] max-w-2xl overflow-hidden p-0 sm:rounded-[24px]">
+          <div className="flex max-h-[calc(100vh-24px)] flex-col">
+            <DialogHeader className="px-4 py-4 sm:px-6">
+              <DialogTitle>{activeProject ? "Edit Project" : "Add Project"}</DialogTitle>
+            </DialogHeader>
+            <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-6">
+              <div className="grid gap-4">
+                <Input
+                  value={formState.title}
+                  onChange={(event) =>
+                    setFormState((prev) => ({ ...prev, title: event.target.value }))
+                  }
+                  placeholder="Project title"
+                />
+                <Textarea
+                  value={formState.description || ""}
+                  onChange={(event) =>
+                    setFormState((prev) => ({ ...prev, description: event.target.value }))
+                  }
+                  placeholder="Project description"
+                />
+                <select
+                  value={formState.status}
+                  onChange={(event) =>
+                    setFormState((prev) => ({ ...prev, status: event.target.value }))
+                  }
+                  className="rounded-[10px] border border-border bg-background px-3 py-2 text-sm text-ink outline-none focus:ring-2 focus:ring-primary/30"
+                >
+                  <option value="Planning">Planning</option>
+                  <option value="Active">Active</option>
+                  <option value="Review">Review</option>
+                  <option value="Completed">Completed</option>
+                </select>
+              </div>
+            </div>
+            <DialogFooter className="border-t border-border px-4 py-4 sm:px-6">
+              <button
+                type="button"
+                onClick={() => setDialogOpen(false)}
+                className="h-9 rounded-[10px] border border-border px-4 text-sm text-ink-soft hover:bg-muted"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSave}
+                className="h-9 rounded-[10px] bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+              >
+                Save
+              </button>
+            </DialogFooter>
           </div>
-          <DialogFooter>
-            <button
-              type="button"
-              onClick={() => setDialogOpen(false)}
-              className="h-9 rounded-[10px] border border-border px-4 text-sm text-ink-soft hover:bg-muted"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={handleSave}
-              className="h-9 rounded-[10px] bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-            >
-              Save
-            </button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -270,7 +301,9 @@ function ProjectsPage() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete project</AlertDialogTitle>
-            <AlertDialogDescription>Are you sure you want to delete this project?</AlertDialogDescription>
+            <AlertDialogDescription>
+              Are you sure you want to delete this project?
+            </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setDeleteOpen(false)}>Cancel</AlertDialogCancel>

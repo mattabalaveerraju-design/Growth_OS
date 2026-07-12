@@ -19,6 +19,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { HydratedDate } from "@/components/client-only";
 import {
   useApplicationStore,
   useExerciseStore,
@@ -33,9 +34,15 @@ export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "GrowthOS — Your personal operating system" },
-      { name: "description", content: "Continue where you left off. Stay consistent. Grow on purpose." },
+      {
+        name: "description",
+        content: "Continue where you left off. Stay consistent. Grow on purpose.",
+      },
       { property: "og:title", content: "GrowthOS — Personal AI productivity OS" },
-      { property: "og:description", content: "A second brain for work, learning, and career growth." },
+      {
+        property: "og:description",
+        content: "A second brain for work, learning, and career growth.",
+      },
     ],
   }),
   component: Home,
@@ -60,7 +67,8 @@ function Home() {
   const totalReadingHours = reading.reduce((sum, item) => sum + item.timeMinutes / 60, 0);
   const totalExerciseHours = exercise.reduce((sum, item) => sum + item.durationMinutes / 60, 0);
   const workHours = tasks.filter((task) => task.status !== "Done").length * 0.5;
-  const totalHours = Math.round((totalLearningHours + totalReadingHours + totalExerciseHours + workHours) * 10) / 10;
+  const totalHours =
+    Math.round((totalLearningHours + totalReadingHours + totalExerciseHours + workHours) * 10) / 10;
   const completedFocus = focusItems.filter((item) => item.status === "Completed").length;
   const upcomingTasks = tasks
     .filter((task) => {
@@ -85,26 +93,25 @@ function Home() {
     <AppShell title="Command Center">
       <div className="mx-auto w-full max-w-[1240px] px-4 sm:px-6 lg:px-4 space-y-8 lg:space-y-10 overflow-x-hidden">
         <motion.div {...fadeUp} transition={{ duration: 0.4 }}>
-  <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-    <div>
-      <h1 className="font-display text-3xl sm:text-4xl lg:text-[34px] font-semibold tracking-[-0.025em] text-ink">
-        Good evening, Balu.
-      </h1>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <h1 className="font-display text-3xl sm:text-4xl lg:text-[34px] font-semibold tracking-[-0.025em] text-ink">
+                Good evening, Balu.
+              </h1>
 
-      <p className="mt-1 text-[15px] text-ink-soft">
-        You have {totalHours.toFixed(1)} growth hours captured in your current workspace.
-      </p>
-    </div>
+              <p className="mt-1 text-[15px] text-ink-soft">
+                You have {totalHours.toFixed(1)} growth hours captured in your current workspace.
+              </p>
+            </div>
 
-    <div className="text-[13px] text-ink-soft">
-      {new Date().toLocaleDateString(undefined, {
-        weekday: "long",
-        month: "long",
-        day: "numeric",
-      })}
-    </div>
-  </div>
-</motion.div>
+            <div className="text-[13px] text-ink-soft">
+              <HydratedDate
+                value={new Date()}
+                options={{ weekday: "long", month: "long", day: "numeric" }}
+              />
+            </div>
+          </div>
+        </motion.div>
 
         <motion.section
           {...fadeUp}
@@ -138,7 +145,9 @@ function Home() {
               <div className="mt-7">
                 <div className="flex items-baseline justify-between">
                   <span className="text-[12px] font-medium text-ink-soft">Week total hours</span>
-                  <span className="font-display text-[15px] font-semibold tracking-tight">{totalHours.toFixed(1)}h</span>
+                  <span className="font-display text-[15px] font-semibold tracking-tight">
+                    {totalHours.toFixed(1)}h
+                  </span>
                 </div>
                 <div className="mt-2 h-1.5 w-full rounded-full bg-muted overflow-hidden">
                   <motion.div
@@ -151,7 +160,9 @@ function Home() {
               </div>
 
               <div className="mt-7 rounded-[16px] border border-border bg-surface/60 p-4">
-                <div className="text-[11px] font-semibold tracking-[0.14em] text-ink-soft/80">NEXT ACTION</div>
+                <div className="text-[11px] font-semibold tracking-[0.14em] text-ink-soft/80">
+                  NEXT ACTION
+                </div>
                 <div className="mt-1 flex items-start justify-between gap-3">
                   <div>
                     <div className="text-[15.5px] font-semibold text-ink">
@@ -176,7 +187,9 @@ function Home() {
                 <button className="group inline-flex items-center gap-2 rounded-[14px] bg-ink text-background px-5 h-12 text-[14.5px] font-medium shadow-[var(--shadow-lifted)] hover:bg-ink/90 transition-all">
                   <Play className="h-4 w-4 fill-current" />
                   Continue working
-                  <span className="ml-1 text-[11px] text-background/60 border border-background/20 rounded px-1.5 py-0.5">↵</span>
+                  <span className="ml-1 text-[11px] text-background/60 border border-background/20 rounded px-1.5 py-0.5">
+                    ↵
+                  </span>
                 </button>
                 <button className="inline-flex items-center gap-1.5 h-12 px-4 rounded-[14px] text-[13.5px] font-medium text-ink-soft hover:text-ink transition-colors">
                   Open analytics
@@ -186,47 +199,63 @@ function Home() {
             </div>
 
             <div className="relative border-l border-border/60 bg-gradient-to-b from-surface/40 to-transparent p-6 lg:p-8">
-              <div className="text-[11px] font-semibold tracking-[0.14em] text-ink-soft/80">ALSO IN PROGRESS</div>
+              <div className="text-[11px] font-semibold tracking-[0.14em] text-ink-soft/80">
+                ALSO IN PROGRESS
+              </div>
               <div className="mt-4 space-y-2">
-                {interviewFollowUps.length ? (
-                  interviewFollowUps.map((r) => (
-                    <button
-                      key={r.title}
-                      className="group w-full text-left rounded-[14px] border border-transparent hover:border-border hover:bg-card p-3 transition-all"
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <div className="text-[13.5px] font-medium text-ink truncate">{r.title}</div>
-                          <div className="mt-0.5 text-[12px] text-ink-soft">{r.meta}</div>
+                {interviewFollowUps.length
+                  ? interviewFollowUps.map((r) => (
+                      <button
+                        key={r.title}
+                        className="group w-full text-left rounded-[14px] border border-transparent hover:border-border hover:bg-card p-3 transition-all"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <div className="text-[13.5px] font-medium text-ink truncate">
+                              {r.title}
+                            </div>
+                            <div className="mt-0.5 text-[12px] text-ink-soft">{r.meta}</div>
+                          </div>
+                          <span className="text-[10.5px] font-medium tracking-wide text-accent-foreground bg-accent rounded-full px-2 py-0.5 shrink-0">
+                            {r.tag}
+                          </span>
                         </div>
-                        <span className="text-[10.5px] font-medium tracking-wide text-accent-foreground bg-accent rounded-full px-2 py-0.5 shrink-0">
-                          {r.tag}
-                        </span>
-                      </div>
-                    </button>
-                  ))
-                ) : (
-                  [
-                    { title: "Review latest learning session", meta: "25 min · Learning", tag: "Learning" },
-                    { title: "Prepare portfolio deliverable", meta: "1h 20m · Work", tag: "Tasks" },
-                    { title: "Plan next interview follow-up", meta: "15 min · Jobs", tag: "Applications" },
-                  ].map((r) => (
-                    <button
-                      key={r.title}
-                      className="group w-full text-left rounded-[14px] border border-transparent hover:border-border hover:bg-card p-3 transition-all"
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <div className="text-[13.5px] font-medium text-ink truncate">{r.title}</div>
-                          <div className="mt-0.5 text-[12px] text-ink-soft">{r.meta}</div>
+                      </button>
+                    ))
+                  : [
+                      {
+                        title: "Review latest learning session",
+                        meta: "25 min · Learning",
+                        tag: "Learning",
+                      },
+                      {
+                        title: "Prepare portfolio deliverable",
+                        meta: "1h 20m · Work",
+                        tag: "Tasks",
+                      },
+                      {
+                        title: "Plan next interview follow-up",
+                        meta: "15 min · Jobs",
+                        tag: "Applications",
+                      },
+                    ].map((r) => (
+                      <button
+                        key={r.title}
+                        className="group w-full text-left rounded-[14px] border border-transparent hover:border-border hover:bg-card p-3 transition-all"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <div className="text-[13.5px] font-medium text-ink truncate">
+                              {r.title}
+                            </div>
+                            <div className="mt-0.5 text-[12px] text-ink-soft">{r.meta}</div>
+                          </div>
+                          <span className="text-[10.5px] font-medium tracking-wide text-accent-foreground bg-accent rounded-full px-2 py-0.5 shrink-0">
+                            {r.tag}
+                          </span>
                         </div>
-                        <span className="text-[10.5px] font-medium tracking-wide text-accent-foreground bg-accent rounded-full px-2 py-0.5 shrink-0">
-                          {r.tag}
-                        </span>
-                      </div>
-                    </button>
-                  ))
-                )}
+                      </button>
+                    ))}
               </div>
             </div>
           </div>
@@ -234,8 +263,8 @@ function Home() {
 
         <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 min-w-0">
           <div className="min-w-0">
-  <TodayFocus />
-</div>
+            <TodayFocus />
+          </div>
           <ConsistencyRing />
           <DeepWork />
           <AIDailySummary />
@@ -246,7 +275,9 @@ function Home() {
           <WeeklyMomentum />
         </section>
 
-        <footer className="pt-4 pb-2 text-center text-[12px] text-ink-soft/60">GrowthOS · Your second brain</footer>
+        <footer className="pt-4 pb-2 text-center text-[12px] text-ink-soft/60">
+          GrowthOS · Your second brain
+        </footer>
       </div>
     </AppShell>
   );
@@ -301,14 +332,20 @@ function TodayFocus() {
       <WidgetCard title="Today's Focus" hint="0 items" icon={CheckCircle2}>
         <div className="rounded-3xl border border-border bg-muted p-6 text-center text-sm text-ink-soft">
           No focus items yet.
-          <div className="mt-3 text-[13px] text-ink">Add a focus item to keep your day on track.</div>
+          <div className="mt-3 text-[13px] text-ink">
+            Add a focus item to keep your day on track.
+          </div>
         </div>
       </WidgetCard>
     );
   }
 
   return (
-    <WidgetCard title="Today's Focus" hint={`${focusItems.length} item${focusItems.length === 1 ? "" : "s"}`} icon={CheckCircle2}>
+    <WidgetCard
+      title="Today's Focus"
+      hint={`${focusItems.length} item${focusItems.length === 1 ? "" : "s"}`}
+      icon={CheckCircle2}
+    >
       <div className="space-y-3">
         {focusItems.slice(0, 4).map((item) => (
           <div key={item.id} className="rounded-3xl border border-border bg-card p-4">
@@ -321,7 +358,9 @@ function TodayFocus() {
               </div>
               <span
                 className={`rounded-full px-2 py-1 text-[11px] font-medium ${
-                  item.status === "Completed" ? "bg-success/15 text-success" : "bg-muted text-ink-soft"
+                  item.status === "Completed"
+                    ? "bg-success/15 text-success"
+                    : "bg-muted text-ink-soft"
                 }`}
               >
                 {item.status}
@@ -329,7 +368,11 @@ function TodayFocus() {
             </div>
             <div className="mt-3 flex items-center justify-between gap-3 text-[11px] text-ink-soft">
               <span>Priority: {item.priority}</span>
-              <span>{item.notes ? `${item.notes.slice(0, 30)}${item.notes.length > 30 ? "…" : ""}` : "No notes"}</span>
+              <span>
+                {item.notes
+                  ? `${item.notes.slice(0, 30)}${item.notes.length > 30 ? "…" : ""}`
+                  : "No notes"}
+              </span>
             </div>
           </div>
         ))}
@@ -342,7 +385,15 @@ function ConsistencyRing() {
   const tasks = useTaskStore((state) => state.tasks);
   const focusItems = useFocusStore((state) => state.focusItems);
   const learning = useLearningStore((state) => state.learning);
-  const score = Math.min(100, Math.max(20, focusItems.filter((item) => item.status === "Completed").length * 8 + tasks.filter((task) => task.status === "Done").length * 4 + learning.length * 2));
+  const score = Math.min(
+    100,
+    Math.max(
+      20,
+      focusItems.filter((item) => item.status === "Completed").length * 8 +
+        tasks.filter((task) => task.status === "Done").length * 4 +
+        learning.length * 2,
+    ),
+  );
   const circumference = 2 * Math.PI * 38;
   const offset = circumference - (score / 100) * circumference;
 
@@ -373,14 +424,22 @@ function ConsistencyRing() {
           </svg>
           <div className="absolute inset-0 grid place-items-center">
             <div className="text-center">
-              <div className="font-display text-[24px] font-semibold tracking-tight leading-none">{score}</div>
+              <div className="font-display text-[24px] font-semibold tracking-tight leading-none">
+                {score}
+              </div>
               <div className="text-[10px] text-ink-soft mt-0.5">score</div>
             </div>
           </div>
         </div>
         <div className="space-y-2 min-w-0 flex-1">
-          <Stat label="Focus completed" value={`${focusItems.filter((item) => item.status === "Completed").length}`} />
-          <Stat label="Tasks done" value={`${tasks.filter((task) => task.status === "Done").length}`} />
+          <Stat
+            label="Focus completed"
+            value={`${focusItems.filter((item) => item.status === "Completed").length}`}
+          />
+          <Stat
+            label="Tasks done"
+            value={`${tasks.filter((task) => task.status === "Done").length}`}
+          />
           <Stat label="Learning items" value={`${learning.length}`} />
         </div>
       </div>
@@ -392,7 +451,13 @@ function DeepWork() {
   const learning = useLearningStore((state) => state.learning);
   const reading = useReadingStore((state) => state.reading);
   const exercise = useExerciseStore((state) => state.exercise);
-  const totalHours = Math.round((learning.reduce((sum, item) => sum + item.timeHours, 0) + reading.reduce((sum, item) => sum + item.timeMinutes / 60, 0) + exercise.reduce((sum, item) => sum + item.durationMinutes / 60, 0)) * 10) / 10;
+  const totalHours =
+    Math.round(
+      (learning.reduce((sum, item) => sum + item.timeHours, 0) +
+        reading.reduce((sum, item) => sum + item.timeMinutes / 60, 0) +
+        exercise.reduce((sum, item) => sum + item.durationMinutes / 60, 0)) *
+        10,
+    ) / 10;
   const max = Math.max(4, totalHours, 6);
   const bars = [1.2, 2.4, 0.8, 3.1, 2.7, 1.8, 2.9];
 
@@ -400,8 +465,12 @@ function DeepWork() {
     <WidgetCard title="Deep Work" hint="this week" icon={Zap}>
       <div>
         <div className="flex items-baseline gap-2">
-          <span className="font-display text-[28px] font-semibold tracking-tight">{totalHours.toFixed(1)}h</span>
-          <span className="text-[12px] text-success font-medium">{totalHours >= 8 ? "+2.4h vs last week" : "+0.6h vs last week"}</span>
+          <span className="font-display text-[28px] font-semibold tracking-tight">
+            {totalHours.toFixed(1)}h
+          </span>
+          <span className="text-[12px] text-success font-medium">
+            {totalHours >= 8 ? "+2.4h vs last week" : "+0.6h vs last week"}
+          </span>
         </div>
         <div className="mt-4 flex items-end gap-1.5 h-[64px]">
           {bars.map((h, i) => (
@@ -426,14 +495,22 @@ function AIDailySummary() {
   const totalLearningHours = learning.reduce((sum, item) => sum + item.timeHours, 0);
 
   return (
-    <WidgetCard title="AI Daily Brief" hint="updated just now" icon={Sparkles} className="md:col-span-2">
+    <WidgetCard
+      title="AI Daily Brief"
+      hint="updated just now"
+      icon={Sparkles}
+      className="md:col-span-2"
+    >
       <div className="flex gap-4">
         <div className="h-9 w-9 rounded-[10px] bg-gradient-to-br from-primary to-violet grid place-items-center shrink-0 shadow-sm">
           <Sparkles className="h-4 w-4 text-primary-foreground" />
         </div>
         <div className="text-[14px] leading-[1.6] text-ink/90">
           {learning.length ? (
-            <>You have {learning.length} learning entries and {totalLearningHours.toFixed(1)} hours logged. Focus on the top priority item to keep momentum.</>
+            <>
+              You have {learning.length} learning entries and {totalLearningHours.toFixed(1)} hours
+              logged. Focus on the top priority item to keep momentum.
+            </>
           ) : (
             "No learning activity yet. Add a learning entry to see your AI summary."
           )}
@@ -452,7 +529,9 @@ function LearningProgress() {
       {learning.length ? (
         <>
           <div className="text-[13.5px] font-semibold text-ink">{learning[0]?.topic}</div>
-          <div className="text-[12px] text-ink-soft">{learning[0]?.category} · {learning[0]?.timeHours.toFixed(1)}h</div>
+          <div className="text-[12px] text-ink-soft">
+            {learning[0]?.category} · {learning[0]?.timeHours.toFixed(1)}h
+          </div>
           <div className="mt-3 h-1 w-full rounded-full bg-muted overflow-hidden">
             <motion.div
               initial={{ width: 0 }}
@@ -471,7 +550,9 @@ function LearningProgress() {
           </div>
         </>
       ) : (
-        <div className="rounded-3xl border border-border p-6 text-sm text-ink-soft">No learning records yet.</div>
+        <div className="rounded-3xl border border-border p-6 text-sm text-ink-soft">
+          No learning records yet.
+        </div>
       )}
     </WidgetCard>
   );
@@ -503,7 +584,9 @@ function SmartSuggestions() {
             <div className="mt-1 h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
             <div className="min-w-0">
               <div className="text-[13px] text-ink leading-snug">{s.text}</div>
-              <div className="mt-1 text-[10.5px] font-medium tracking-wide text-ink-soft/70 uppercase">{s.tag}</div>
+              <div className="mt-1 text-[10.5px] font-medium tracking-wide text-ink-soft/70 uppercase">
+                {s.tag}
+              </div>
             </div>
           </div>
         ))}
@@ -527,35 +610,33 @@ function UpcomingDeadlines() {
   return (
     <WidgetCard title="Upcoming" icon={Clock}>
       <div className="space-y-2.5">
-  {upcoming.length ? (
-    upcoming.map((d) => (
-      <div
-        key={d.id}
-        className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-2.5 min-w-0 w-full"
-      >
-       <div className="flex items-center gap-2.5 min-w-0 w-full overflow-x-auto whitespace-nowrap">
-          <span
-            className={`h-1.5 w-1.5 rounded-full shrink-0 ${
-              d.priority === "High" ? "bg-danger" : "bg-ink-soft/30"
-            }`}
-          />
+        {upcoming.length ? (
+          upcoming.map((d) => (
+            <div
+              key={d.id}
+              className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-2.5 min-w-0 w-full"
+            >
+              <div className="flex items-center gap-2.5 min-w-0 w-full overflow-x-auto whitespace-nowrap">
+                <span
+                  className={`h-1.5 w-1.5 rounded-full shrink-0 ${
+                    d.priority === "High" ? "bg-danger" : "bg-ink-soft/30"
+                  }`}
+                />
 
-          <span className="text-[13px] text-ink truncate min-w-0">
-            {d.title}
-          </span>
-        </div>
+                <span className="text-[13px] text-ink truncate min-w-0">{d.title}</span>
+              </div>
 
-        <span className="text-[11.5px] text-ink-soft shrink-0 whitespace-nowrap">
-          {new Date(d.dueDate).toLocaleDateString()}
-        </span>
+              <span className="text-[11.5px] text-ink-soft shrink-0 whitespace-nowrap">
+                <HydratedDate value={d.dueDate} />
+              </span>
+            </div>
+          ))
+        ) : (
+          <div className="rounded-3xl border border-border p-6 text-sm text-ink-soft">
+            No deadlines in the next 7 days.
+          </div>
+        )}
       </div>
-    ))
-  ) : (
-    <div className="rounded-3xl border border-border p-6 text-sm text-ink-soft">
-      No deadlines in the next 7 days.
-    </div>
-  )}
-</div>
     </WidgetCard>
   );
 }
@@ -570,12 +651,16 @@ function ActiveGoals() {
           {goals.slice(0, 3).map((goal) => (
             <div key={goal.id} className="rounded-3xl border border-border bg-card p-4">
               <div className="text-[13px] font-semibold text-ink">{goal.title}</div>
-              <div className="mt-1 text-[12px] text-ink-soft">{goal.category} · {goal.status}</div>
+              <div className="mt-1 text-[12px] text-ink-soft">
+                {goal.category} · {goal.status}
+              </div>
             </div>
           ))}
         </div>
       ) : (
-        <div className="rounded-3xl border border-border p-6 text-sm text-ink-soft">No goals yet. Add one to track your growth.</div>
+        <div className="rounded-3xl border border-border p-6 text-sm text-ink-soft">
+          No goals yet. Add one to track your growth.
+        </div>
       )}
     </WidgetCard>
   );
@@ -596,7 +681,8 @@ function WeeklyMomentum() {
         <span className="text-[12px] text-success font-medium">growth score</span>
       </div>
       <div className="mt-3 text-[12.5px] text-ink-soft leading-relaxed">
-        You have {current} activities logged this week. Keep building momentum with focus and imports.
+        You have {current} activities logged this week. Keep building momentum with focus and
+        imports.
       </div>
       <Link
         to="/analytics"

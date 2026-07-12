@@ -12,7 +12,7 @@ export function downloadJSON(filename: string, data: unknown) {
 }
 
 export function downloadCSV(filename: string, rows: unknown[]) {
-  const csv = Papa.unparse(rows as any[]);
+  const csv = Papa.unparse(rows as Array<Record<string, unknown>>);
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
@@ -23,7 +23,7 @@ export function downloadCSV(filename: string, rows: unknown[]) {
 }
 
 export function downloadXLSX(filename: string, rows: unknown[]) {
-  const worksheet = XLSX.utils.json_to_sheet(rows as any[]);
+  const worksheet = XLSX.utils.json_to_sheet(rows as Array<Record<string, unknown>>);
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
   XLSX.writeFile(workbook, `${filename}.xlsx`);

@@ -2,7 +2,14 @@ import { createFileRoute } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { Sparkles, Zap, Target, GraduationCap, Flame, Award } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
-import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, Radar, PolarRadiusAxis } from "recharts";
+import {
+  ResponsiveContainer,
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  Radar,
+  PolarRadiusAxis,
+} from "recharts";
 
 export const Route = createFileRoute("/coach")({
   head: () => ({ meta: [{ title: "AI Coach — GrowthOS" }] }),
@@ -25,7 +32,9 @@ function CoachPage() {
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
             <h1 className="font-display text-[28px] font-semibold tracking-[-0.025em]">AI Coach</h1>
-            <p className="text-[13.5px] text-ink-soft">Your personal mentor — always learning you</p>
+            <p className="text-[13.5px] text-ink-soft">
+              Your personal mentor — always learning you
+            </p>
           </div>
         </div>
 
@@ -66,32 +75,69 @@ function CoachPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_1fr] gap-5">
           <motion.div
-            initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
             className="card-soft p-6"
           >
-            <div className="text-[11.5px] font-semibold tracking-[0.12em] text-ink-soft/80 uppercase">Skill Growth</div>
+            <div className="text-[11.5px] font-semibold tracking-[0.12em] text-ink-soft/80 uppercase">
+              Skill Growth
+            </div>
             <div className="h-[280px] mt-2">
               <ResponsiveContainer>
                 <RadarChart data={skills} outerRadius="75%">
                   <PolarGrid stroke="oklch(0.92 0.006 95)" />
-                  <PolarAngleAxis dataKey="skill" tick={{ fill: "oklch(0.42 0.02 265)", fontSize: 11, fontWeight: 500 }} />
+                  <PolarAngleAxis
+                    dataKey="skill"
+                    tick={{ fill: "oklch(0.42 0.02 265)", fontSize: 11, fontWeight: 500 }}
+                  />
                   <PolarRadiusAxis tick={false} axisLine={false} />
-                  <Radar dataKey="value" stroke="oklch(0.52 0.22 275)" fill="oklch(0.62 0.25 295)" fillOpacity={0.25} strokeWidth={2} />
+                  <Radar
+                    dataKey="value"
+                    stroke="oklch(0.52 0.22 275)"
+                    fill="oklch(0.62 0.25 295)"
+                    fillOpacity={0.25}
+                    strokeWidth={2}
+                  />
                 </RadarChart>
               </ResponsiveContainer>
             </div>
           </motion.div>
 
           <motion.div
-            initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.05 }}
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.05 }}
             className="card-soft p-6"
           >
-            <div className="text-[11.5px] font-semibold tracking-[0.12em] text-ink-soft/80 uppercase">Recent Achievements</div>
+            <div className="text-[11.5px] font-semibold tracking-[0.12em] text-ink-soft/80 uppercase">
+              Recent Achievements
+            </div>
             <div className="mt-4 space-y-3.5">
-              <Achievement icon={Flame} title="12 day streak" sub="Your longest learning streak yet." tone="warning" />
-              <Achievement icon={Award} title="Completed 7 tasks this week" sub="Above average for your last 6 weeks." tone="primary" />
-              <Achievement icon={GraduationCap} title="Learned 4 new topics" sub="Figma Auto Layout, Design Systems, +2 more." tone="violet" />
-              <Achievement icon={Zap} title="24h focused work this week" sub="Deep work hours grew 12% vs last week." tone="success" />
+              <Achievement
+                icon={Flame}
+                title="12 day streak"
+                sub="Your longest learning streak yet."
+                tone="warning"
+              />
+              <Achievement
+                icon={Award}
+                title="Completed 7 tasks this week"
+                sub="Above average for your last 6 weeks."
+                tone="primary"
+              />
+              <Achievement
+                icon={GraduationCap}
+                title="Learned 4 new topics"
+                sub="Figma Auto Layout, Design Systems, +2 more."
+                tone="violet"
+              />
+              <Achievement
+                icon={Zap}
+                title="24h focused work this week"
+                sub="Deep work hours grew 12% vs last week."
+                tone="success"
+              />
             </div>
           </motion.div>
         </div>
@@ -101,10 +147,19 @@ function CoachPage() {
 }
 
 function InsightCard({
-  tag, tone, title, body, action, icon: Icon = Sparkles, big,
+  tag,
+  tone,
+  title,
+  body,
+  action,
+  icon: Icon = Sparkles,
+  big,
 }: {
-  tag: string; tone: "primary" | "violet" | "success" | "warning";
-  title: string; body: string; action: string;
+  tag: string;
+  tone: "primary" | "violet" | "success" | "warning";
+  title: string;
+  body: string;
+  action: string;
   icon?: React.ComponentType<{ className?: string }>;
   big?: string;
 }) {
@@ -122,7 +177,9 @@ function InsightCard({
   };
   return (
     <motion.div
-      initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
       className={`relative overflow-hidden rounded-[20px] border bg-gradient-to-br ${toneBg[tone]} p-5`}
     >
       <div className="flex items-center gap-2 text-[10.5px] font-semibold tracking-[0.14em] text-ink-soft/80 uppercase">
@@ -133,14 +190,26 @@ function InsightCard({
       </div>
       {big && <div className="text-[13px] font-semibold text-ink mt-0.5">{title}</div>}
       <p className="mt-1.5 text-[12.5px] text-ink-soft leading-relaxed">{body}</p>
-      <button className={`mt-4 inline-flex items-center justify-center h-8 px-3.5 rounded-[8px] text-[12px] font-medium ${btnBg[tone]} transition-colors`}>
+      <button
+        className={`mt-4 inline-flex items-center justify-center h-8 px-3.5 rounded-[8px] text-[12px] font-medium ${btnBg[tone]} transition-colors`}
+      >
         {action}
       </button>
     </motion.div>
   );
 }
 
-function Achievement({ icon: Icon, title, sub, tone }: { icon: React.ComponentType<{ className?: string }>; title: string; sub: string; tone: string }) {
+function Achievement({
+  icon: Icon,
+  title,
+  sub,
+  tone,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  title: string;
+  sub: string;
+  tone: string;
+}) {
   const map: Record<string, string> = {
     warning: "bg-warning/15 text-warning",
     primary: "bg-primary/15 text-primary",

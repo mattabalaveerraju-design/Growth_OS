@@ -3,7 +3,13 @@ import { createFileRoute } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { Plus, Briefcase, CheckCircle2, MessageSquare, XCircle } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,8 +29,23 @@ export const Route = createFileRoute("/jobs")({
   component: JobsPage,
 });
 
-const tabs: (ApplicationStatus | "All")[] = ["All", "Wishlist", "Applied", "Screening", "Interview", "Offer", "Rejected"];
-const statuses: ApplicationStatus[] = ["Wishlist", "Applied", "Screening", "Interview", "Offer", "Rejected"];
+const tabs: (ApplicationStatus | "All")[] = [
+  "All",
+  "Wishlist",
+  "Applied",
+  "Screening",
+  "Interview",
+  "Offer",
+  "Rejected",
+];
+const statuses: ApplicationStatus[] = [
+  "Wishlist",
+  "Applied",
+  "Screening",
+  "Interview",
+  "Offer",
+  "Rejected",
+];
 
 const statusStyle: Record<ApplicationStatus, string> = {
   Wishlist: "bg-muted text-ink-soft",
@@ -60,19 +81,24 @@ function JobsPage() {
 
   const filteredApplications = useMemo(
     () =>
-      activeTab === "All"
-        ? applications
-        : applications.filter((item) => item.status === activeTab),
+      activeTab === "All" ? applications : applications.filter((item) => item.status === activeTab),
     [applications, activeTab],
   );
 
   const applicationsSent = applications.filter((item) => item.status !== "Wishlist").length;
-  const responseRate = applications.length ? Math.round((applicationsSent / applications.length) * 100) : 0;
+  const responseRate = applications.length
+    ? Math.round((applicationsSent / applications.length) * 100)
+    : 0;
   const interviewRate = applications.length
-    ? Math.round((applications.filter((item) => item.status === "Interview").length / applications.length) * 100)
+    ? Math.round(
+        (applications.filter((item) => item.status === "Interview").length / applications.length) *
+          100,
+      )
     : 0;
   const offerRate = applications.length
-    ? Math.round((applications.filter((item) => item.status === "Offer").length / applications.length) * 100)
+    ? Math.round(
+        (applications.filter((item) => item.status === "Offer").length / applications.length) * 100,
+      )
     : 0;
 
   const openNew = () => {
@@ -131,7 +157,9 @@ function JobsPage() {
       <div className="space-y-6">
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
-            <h1 className="font-display text-[28px] font-semibold tracking-[-0.025em]">Applications</h1>
+            <h1 className="font-display text-[28px] font-semibold tracking-[-0.025em]">
+              Applications
+            </h1>
             <p className="text-[13.5px] text-ink-soft">
               {applications.length} active · {responseRate}% response rate
             </p>
@@ -182,7 +210,10 @@ function JobsPage() {
                   </thead>
                   <tbody>
                     {filteredApplications.map((application) => (
-                      <tr key={application.id} className="border-t border-border/60 hover:bg-muted/40 transition-colors">
+                      <tr
+                        key={application.id}
+                        className="border-t border-border/60 hover:bg-muted/40 transition-colors"
+                      >
                         <td className="px-2 py-3.5">
                           <div className="flex items-center gap-2.5">
                             <div className="h-7 w-7 rounded-[8px] bg-gradient-to-br from-primary/20 to-violet/20 grid place-items-center text-[11px] font-semibold text-ink">
@@ -196,7 +227,11 @@ function JobsPage() {
                           <div className="space-y-1">
                             <select
                               value={application.status}
-                              onChange={(event) => updateApplication(application.id, { status: event.target.value as ApplicationStatus })}
+                              onChange={(event) =>
+                                updateApplication(application.id, {
+                                  status: event.target.value as ApplicationStatus,
+                                })
+                              }
                               className="h-9 w-full rounded-[10px] border border-border bg-background px-3 py-2 text-[12px] outline-none"
                             >
                               {statuses.map((status) => (
@@ -205,13 +240,18 @@ function JobsPage() {
                                 </option>
                               ))}
                             </select>
-                            <span className={`inline-block text-[10.5px] font-medium px-2 py-0.5 rounded-full ${statusStyle[application.status]}`}>
+                            <span
+                              className={`inline-block text-[10.5px] font-medium px-2 py-0.5 rounded-full ${statusStyle[application.status]}`}
+                            >
                               {application.status}
                             </span>
                           </div>
                         </td>
                         <td className="px-2 py-3.5 text-ink-soft">{application.appliedDate}</td>
-                        <td className="px-2 py-3.5 text-ink-soft">{application.interviewStage || (application.portfolioSent ? "Portfolio sent" : "Awaiting next action")}</td>
+                        <td className="px-2 py-3.5 text-ink-soft">
+                          {application.interviewStage ||
+                            (application.portfolioSent ? "Portfolio sent" : "Awaiting next action")}
+                        </td>
                         <td className="px-2 py-3.5 text-right">
                           <div className="inline-flex items-center gap-3">
                             <button
@@ -265,12 +305,38 @@ function JobsPage() {
               transition={{ duration: 0.4, delay: 0.05 }}
               className="card-soft p-5"
             >
-              <div className="text-[11.5px] font-semibold tracking-[0.12em] text-ink-soft/80 uppercase">Application Stats</div>
+              <div className="text-[11.5px] font-semibold tracking-[0.12em] text-ink-soft/80 uppercase">
+                Application Stats
+              </div>
               <div className="mt-4 space-y-3">
-                <FunnelRow icon={Briefcase} label="Applications Sent" value={`${applicationsSent}`} pct={Math.min(100, applicationsSent)} tint="primary" />
-                <FunnelRow icon={MessageSquare} label="Response Rate" value={`${responseRate}%`} pct={responseRate} tint="violet" />
-                <FunnelRow icon={CheckCircle2} label="Interview Rate" value={`${interviewRate}%`} pct={interviewRate} tint="warning" />
-                <FunnelRow icon={XCircle} label="Offer Rate" value={`${offerRate}%`} pct={offerRate} tint="success" />
+                <FunnelRow
+                  icon={Briefcase}
+                  label="Applications Sent"
+                  value={`${applicationsSent}`}
+                  pct={Math.min(100, applicationsSent)}
+                  tint="primary"
+                />
+                <FunnelRow
+                  icon={MessageSquare}
+                  label="Response Rate"
+                  value={`${responseRate}%`}
+                  pct={responseRate}
+                  tint="violet"
+                />
+                <FunnelRow
+                  icon={CheckCircle2}
+                  label="Interview Rate"
+                  value={`${interviewRate}%`}
+                  pct={interviewRate}
+                  tint="warning"
+                />
+                <FunnelRow
+                  icon={XCircle}
+                  label="Offer Rate"
+                  value={`${offerRate}%`}
+                  pct={offerRate}
+                  tint="success"
+                />
               </div>
             </motion.div>
 
@@ -280,99 +346,134 @@ function JobsPage() {
               transition={{ duration: 0.4, delay: 0.1 }}
               className="card-soft p-5 bg-gradient-to-br from-card to-accent/20"
             >
-              <div className="text-[11.5px] font-semibold tracking-[0.12em] text-ink-soft/80 uppercase">AI Resume Tip</div>
+              <div className="text-[11.5px] font-semibold tracking-[0.12em] text-ink-soft/80 uppercase">
+                AI Resume Tip
+              </div>
               <p className="mt-3 text-[13px] leading-relaxed text-ink/90">
-                Your BluConn case study lifts every Senior PD application. Lead with it on the Linear and Stripe resumes.
+                Your BluConn case study lifts every Senior PD application. Lead with it on the
+                Linear and Stripe resumes.
               </p>
-              <button className="mt-3 text-[12.5px] font-medium text-primary hover:underline">Apply suggestion →</button>
+              <button className="mt-3 text-[12.5px] font-medium text-primary hover:underline">
+                Apply suggestion →
+              </button>
             </motion.div>
           </aside>
         </div>
       </div>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-3xl">
-          <DialogHeader>
-            <DialogTitle>{activeApplication ? "Edit Application" : "Add Application"}</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4">
-            <Input
-              value={formState.company}
-              onChange={(event) => setFormState((prev) => ({ ...prev, company: event.target.value }))}
-              placeholder="Company"
-            />
-            <Input
-              value={formState.position}
-              onChange={(event) => setFormState((prev) => ({ ...prev, position: event.target.value }))}
-              placeholder="Position"
-            />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <Input
-                value={formState.country}
-                onChange={(event) => setFormState((prev) => ({ ...prev, country: event.target.value }))}
-                placeholder="Country"
-              />
-              <Input
-                value={formState.salary}
-                onChange={(event) => setFormState((prev) => ({ ...prev, salary: event.target.value }))}
-                placeholder="Salary"
-              />
+        <DialogContent className="w-[calc(100vw-24px)] max-w-3xl overflow-hidden p-0 sm:rounded-[24px]">
+          <div className="flex max-h-[calc(100vh-24px)] flex-col">
+            <DialogHeader className="px-4 py-4 sm:px-6">
+              <DialogTitle>
+                {activeApplication ? "Edit Application" : "Add Application"}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-6">
+              <div className="grid gap-4">
+                <Input
+                  value={formState.company}
+                  onChange={(event) =>
+                    setFormState((prev) => ({ ...prev, company: event.target.value }))
+                  }
+                  placeholder="Company"
+                />
+                <Input
+                  value={formState.position}
+                  onChange={(event) =>
+                    setFormState((prev) => ({ ...prev, position: event.target.value }))
+                  }
+                  placeholder="Position"
+                />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <Input
+                    value={formState.country}
+                    onChange={(event) =>
+                      setFormState((prev) => ({ ...prev, country: event.target.value }))
+                    }
+                    placeholder="Country"
+                  />
+                  <Input
+                    value={formState.salary}
+                    onChange={(event) =>
+                      setFormState((prev) => ({ ...prev, salary: event.target.value }))
+                    }
+                    placeholder="Salary"
+                  />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <Input
+                    type="date"
+                    value={formState.appliedDate}
+                    onChange={(event) =>
+                      setFormState((prev) => ({ ...prev, appliedDate: event.target.value }))
+                    }
+                  />
+                  <select
+                    value={formState.status}
+                    onChange={(event) =>
+                      setFormState((prev) => ({
+                        ...prev,
+                        status: event.target.value as ApplicationStatus,
+                      }))
+                    }
+                    className="rounded-[10px] border border-border bg-background px-3 py-2 text-sm text-ink outline-none focus:ring-2 focus:ring-primary/30"
+                  >
+                    {statuses.map((status) => (
+                      <option key={status} value={status}>
+                        {status}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <Input
+                    value={formState.interviewStage}
+                    onChange={(event) =>
+                      setFormState((prev) => ({ ...prev, interviewStage: event.target.value }))
+                    }
+                    placeholder="Interview Stage"
+                  />
+                  <select
+                    value={formState.portfolioSent ? "Yes" : "No"}
+                    onChange={(event) =>
+                      setFormState((prev) => ({
+                        ...prev,
+                        portfolioSent: event.target.value === "Yes",
+                      }))
+                    }
+                    className="rounded-[10px] border border-border bg-background px-3 py-2 text-sm text-ink outline-none focus:ring-2 focus:ring-primary/30"
+                  >
+                    <option value="No">Portfolio Sent: No</option>
+                    <option value="Yes">Portfolio Sent: Yes</option>
+                  </select>
+                </div>
+                <Textarea
+                  value={formState.notes}
+                  onChange={(event) =>
+                    setFormState((prev) => ({ ...prev, notes: event.target.value }))
+                  }
+                  placeholder="Notes"
+                />
+              </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <Input
-                type="date"
-                value={formState.appliedDate}
-                onChange={(event) => setFormState((prev) => ({ ...prev, appliedDate: event.target.value }))}
-              />
-              <select
-                value={formState.status}
-                onChange={(event) => setFormState((prev) => ({ ...prev, status: event.target.value as ApplicationStatus }))}
-                className="rounded-[10px] border border-border bg-background px-3 py-2 text-sm text-ink outline-none focus:ring-2 focus:ring-primary/30"
+            <DialogFooter className="border-t border-border px-4 py-4 sm:px-6">
+              <button
+                type="button"
+                onClick={() => setDialogOpen(false)}
+                className="h-9 rounded-[10px] border border-border px-4 text-sm text-ink-soft hover:bg-muted"
               >
-                {statuses.map((status) => (
-                  <option key={status} value={status}>
-                    {status}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <Input
-                value={formState.interviewStage}
-                onChange={(event) => setFormState((prev) => ({ ...prev, interviewStage: event.target.value }))}
-                placeholder="Interview Stage"
-              />
-              <select
-                value={formState.portfolioSent ? "Yes" : "No"}
-                onChange={(event) => setFormState((prev) => ({ ...prev, portfolioSent: event.target.value === "Yes" }))}
-                className="rounded-[10px] border border-border bg-background px-3 py-2 text-sm text-ink outline-none focus:ring-2 focus:ring-primary/30"
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSave}
+                className="h-9 rounded-[10px] bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
               >
-                <option value="No">Portfolio Sent: No</option>
-                <option value="Yes">Portfolio Sent: Yes</option>
-              </select>
-            </div>
-            <Textarea
-              value={formState.notes}
-              onChange={(event) => setFormState((prev) => ({ ...prev, notes: event.target.value }))}
-              placeholder="Notes"
-            />
+                Save
+              </button>
+            </DialogFooter>
           </div>
-          <DialogFooter>
-            <button
-              type="button"
-              onClick={() => setDialogOpen(false)}
-              className="h-9 rounded-[10px] border border-border px-4 text-sm text-ink-soft hover:bg-muted"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={handleSave}
-              className="h-9 rounded-[10px] bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-            >
-              Save
-            </button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -380,7 +481,9 @@ function JobsPage() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete application</AlertDialogTitle>
-            <AlertDialogDescription>Are you sure you want to delete this application?</AlertDialogDescription>
+            <AlertDialogDescription>
+              Are you sure you want to delete this application?
+            </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setDeleteOpen(false)}>Cancel</AlertDialogCancel>
@@ -392,7 +495,19 @@ function JobsPage() {
   );
 }
 
-function FunnelRow({ icon: Icon, label, value, pct, tint }: { icon: ComponentType<{ className?: string }>; label: string; value: string; pct: number; tint: string }) {
+function FunnelRow({
+  icon: Icon,
+  label,
+  value,
+  pct,
+  tint,
+}: {
+  icon: ComponentType<{ className?: string }>;
+  label: string;
+  value: string;
+  pct: number;
+  tint: string;
+}) {
   const tintMap: Record<string, string> = {
     primary: "bg-primary",
     violet: "bg-violet",
@@ -408,7 +523,10 @@ function FunnelRow({ icon: Icon, label, value, pct, tint }: { icon: ComponentTyp
         <span className="font-display font-semibold text-ink">{value}</span>
       </div>
       <div className="mt-1.5 h-1 w-full rounded-full bg-muted overflow-hidden">
-        <div className={`h-full rounded-full ${tintMap[tint]}`} style={{ width: `${Math.min(100, Math.max(0, pct))}%` }} />
+        <div
+          className={`h-full rounded-full ${tintMap[tint]}`}
+          style={{ width: `${Math.min(100, Math.max(0, pct))}%` }}
+        />
       </div>
     </div>
   );

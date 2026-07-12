@@ -1,9 +1,15 @@
-import { useMemo, useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useMemo, useState } from "react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { Plus, Search, Trash2 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,13 +23,41 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useVaultStore, VaultItem } from "@/stores/useGrowthStores";
+import { ResourceGrid } from "@/components/resource-grid";
+import type { ResourceItem } from "@/lib/resource-types";
+import {
+  type CloudCardRecord,
+  type CloudFileRecord,
+  deleteCloudCard,
+  deleteCloudFile,
+  hasSupabaseConfig,
+  listCloudCards,
+  listCloudFiles,
+  updateCloudCardProgress,
+  uploadCloudFile,
+  upsertCloudCard,
+} from "@/lib/cloud-data";
 
 export const Route = createFileRoute("/knowledge")({
   head: () => ({ meta: [{ title: "Knowledge Vault — GrowthOS" }] }),
   component: KnowledgePage,
 });
 
+const mapCloudCardToVault = (card: CloudCardRecord): VaultItem => {
+  const metadata = (card.metadata ?? {}) as Record<string, unknown>;
+  return {
+    id: card.id,
+    title: card.title,
+    type: metadata.type === "file" ? "file" : "note",
+    filename: typeof metadata.filename === "string" ? metadata.filename : undefined,
+    url: typeof metadata.url === "string" ? metadata.url : undefined,
+    content: typeof card.content === "string" ? card.content : undefined,
+    createdAt: card.created_at ?? new Date().toISOString(),
+  };
+};
+
 function KnowledgePage() {
+  const navigate = useNavigate();
   const vault = useVaultStore((state) => state.vault);
   const addVaultItem = useVaultStore((state) => state.addVaultItem);
   const updateVaultItem = useVaultStore((state) => state.updateVaultItem);
@@ -39,21 +73,127 @@ function KnowledgePage() {
     type: "note",
     content: "",
   });
+  const [cloudEnabled, setCloudEnabled] = useState(hasSupabaseConfig);
+  const [cloudItems, setCloudItems] = useState<CloudCardRecord[]>([]);
+  const [cloudStatus, setCloudStatus] = useState(
+    hasSupabaseConfig ? "Cloud sync ready" : "Cloud sync not configured",
+  );
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [existingFiles, setExistingFiles] = useState<CloudFileRecord[]>([]);
+
+  useEffect(() => {
+    if (!hasSupabaseConfig) {
+      setCloudEnabled(false);
+      setCloudStatus("Cloud sync not configured");
+      return;
+    }
+
+    let active = true;
+    setCloudEnabled(true);
+    setCloudStatus("Connecting to cloud workspace...");
+    listCloudCards("knowledge").then((cards) => {
+      if (!active) return;
+      setCloudItems(cards);
+      setCloudStatus(cards.length ? "Cloud sync ready" : "Cloud sync ready — add your first note");
+    });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!cloudEnabled || !activeNote?.id || !dialogOpen) {
+      setExistingFiles([]);
+      return;
+    }
+
+    let active = true;
+    listCloudFiles("knowledge", activeNote.id).then((files) => {
+      if (!active) return;
+      setExistingFiles(files);
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [activeNote?.id, cloudEnabled, dialogOpen]);
+
+  const visibleVault = useMemo(
+    () => (cloudEnabled ? cloudItems.map(mapCloudCardToVault) : vault),
+    [cloudEnabled, cloudItems, vault],
+  );
 
   const filteredVault = useMemo(
     () =>
-      vault.filter((item) =>
+      visibleVault.filter((item) =>
         [item.title, item.content, item.filename]
           .filter(Boolean)
           .join(" ")
           .toLowerCase()
           .includes(search.toLowerCase()),
       ),
-    [vault, search],
+    [visibleVault, search],
   );
+
+  const resourceItems = useMemo<ResourceItem[]>(() => {
+    if (cloudEnabled) {
+      return cloudItems.map((card) => ({
+        id: card.id,
+        module: "knowledge" as const,
+        title: card.title,
+        description: typeof card.summary === "string" ? card.summary : undefined,
+        category:
+          typeof (card.metadata ?? {}).type === "string"
+            ? String((card.metadata ?? {}).type)
+            : undefined,
+        tags: Array.isArray((card.metadata ?? {}).tags)
+          ? ((card.metadata ?? {}).tags as string[])
+          : undefined,
+        favorite: Boolean((card.metadata ?? {}).favorite),
+        notes: typeof card.content === "string" ? card.content : undefined,
+        source:
+          typeof (card.metadata ?? {}).url === "string"
+            ? String((card.metadata ?? {}).url)
+            : undefined,
+        createdAt: card.created_at ?? undefined,
+        updatedAt: card.updated_at ?? undefined,
+        lastOpenedAt:
+          typeof (card.metadata ?? {}).lastOpenedAt === "string"
+            ? String((card.metadata ?? {}).lastOpenedAt)
+            : undefined,
+        currentPage:
+          typeof (card.metadata ?? {}).currentPage === "number"
+            ? (card.metadata ?? {}).currentPage
+            : undefined,
+        progressPercentage:
+          typeof (card.metadata ?? {}).progressPercentage === "number"
+            ? (card.metadata ?? {}).progressPercentage
+            : undefined,
+      }));
+    }
+
+    return vault.map((item) => ({
+      id: item.id,
+      module: "knowledge" as const,
+      title: item.title,
+      description: item.content,
+      category: item.type,
+      favorite: item.favorite,
+      notes: item.content,
+      source: item.url,
+      createdAt: item.createdAt,
+      updatedAt: item.createdAt,
+      lastOpenedAt: item.lastOpenedAt,
+      currentPage: item.currentPage,
+      progressPercentage: item.progressPercentage,
+    }));
+  }, [cloudEnabled, cloudItems, vault]);
 
   const openNew = () => {
     setActiveNote(null);
+    setSelectedFile(null);
+    setExistingFiles([]);
     setFormState({
       title: "",
       type: "note",
@@ -64,6 +204,8 @@ function KnowledgePage() {
 
   const openEdit = (item: VaultItem) => {
     setActiveNote(item);
+    setSelectedFile(null);
+    setExistingFiles([]);
     setFormState({
       title: item.title,
       type: item.type,
@@ -74,9 +216,39 @@ function KnowledgePage() {
     setDialogOpen(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const title = formState.title.trim();
     if (!title) return;
+
+    if (cloudEnabled) {
+      const saved = await upsertCloudCard("knowledge", {
+        id: activeNote?.id,
+        title,
+        content: formState.type === "note" ? (formState.content ?? "") : "",
+        metadata: {
+          type: formState.type,
+          filename: formState.filename,
+          url: formState.url,
+        },
+      });
+
+      if (saved) {
+        setCloudItems((prev) => {
+          const next = prev.filter((item) => item.id !== saved.id);
+          return [saved, ...next];
+        });
+        if (selectedFile) {
+          await uploadCloudFile("knowledge", saved.id, selectedFile);
+          const files = await listCloudFiles("knowledge", saved.id);
+          setExistingFiles(files);
+        }
+        setDialogOpen(false);
+        setSelectedFile(null);
+        setActiveNote(null);
+      }
+      return;
+    }
+
     if (activeNote) {
       updateVaultItem(activeNote.id, { ...formState, title });
     } else {
@@ -85,11 +257,43 @@ function KnowledgePage() {
     setDialogOpen(false);
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!deleteTarget) return;
+    if (cloudEnabled) {
+      await deleteCloudCard("knowledge", deleteTarget);
+      setCloudItems((prev) => prev.filter((item) => item.id !== deleteTarget));
+      setDeleteOpen(false);
+      setDeleteTarget("");
+      return;
+    }
+
     deleteVaultItem(deleteTarget);
     setDeleteOpen(false);
     setDeleteTarget("");
+  };
+
+  const removeAttachment = async (fileId: string) => {
+    if (!cloudEnabled || !activeNote?.id) return;
+    await deleteCloudFile(fileId);
+    const files = await listCloudFiles("knowledge", activeNote.id);
+    setExistingFiles(files);
+  };
+
+  const handleFavoriteToggle = async (item: ResourceItem) => {
+    if (cloudEnabled) {
+      const updated = await updateCloudCardProgress("knowledge", item.id, {
+        favorite: !item.favorite,
+        metadata: { favorite: !item.favorite },
+      });
+      if (updated) {
+        setCloudItems((prev) =>
+          prev.map((card) => (card.id === item.id ? { ...card, ...updated } : card)),
+        );
+      }
+      return;
+    }
+
+    updateVaultItem(item.id, { favorite: !item.favorite });
   };
 
   return (
@@ -97,8 +301,12 @@ function KnowledgePage() {
       <div className="space-y-6">
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
-            <h1 className="font-display text-[28px] font-semibold tracking-[-0.025em]">Knowledge Vault</h1>
-            <p className="text-[13.5px] text-ink-soft">Your second brain — research, notes, frameworks, and AI prompts</p>
+            <h1 className="font-display text-[28px] font-semibold tracking-[-0.025em]">
+              Knowledge Vault
+            </h1>
+            <p className="text-[13.5px] text-ink-soft">
+              Your second brain — research, notes, frameworks, and AI prompts
+            </p>
           </div>
           <button
             type="button"
@@ -107,6 +315,10 @@ function KnowledgePage() {
           >
             <Plus className="h-4 w-4" /> Add Note
           </button>
+        </div>
+
+        <div className="rounded-[12px] border border-border/70 bg-card/80 px-3 py-2 text-[12px] text-ink-soft">
+          {cloudStatus}
         </div>
 
         <motion.section
@@ -128,45 +340,17 @@ function KnowledgePage() {
           </div>
 
           {filteredVault.length ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredVault.map((item) => (
-                <motion.div
-                  key={item.id}
-                  initial={{ opacity: 0, y: 4 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="rounded-[16px] border border-border bg-card p-4 hover:border-border/80 transition-colors"
-                >
-                  <div className="flex items-start justify-between gap-2 mb-2">
-                    <h3 className="font-semibold text-ink text-[14px] line-clamp-2 flex-1">{item.title}</h3>
-                    <span className="text-[10.5px] font-medium px-2 py-0.5 rounded-full bg-muted text-ink-soft">
-                      {item.type}
-                    </span>
-                  </div>
-                  {item.content && <p className="text-[12.5px] text-ink-soft line-clamp-3 mb-3">{item.content}</p>}
-                  {item.filename && <p className="text-[12px] text-ink-soft/70 mb-3">📄 {item.filename}</p>}
-                  <div className="flex items-center gap-2 pt-2 border-t border-border/60">
-                    <button
-                      type="button"
-                      onClick={() => openEdit(item)}
-                      className="flex-1 text-[12px] font-medium text-primary hover:underline"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setDeleteTarget(item.id);
-                        setDeleteOpen(true);
-                      }}
-                      className="h-8 w-8 rounded-[8px] flex items-center justify-center text-destructive hover:bg-destructive/10 transition-colors"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          ) : vault.length ? (
+            <ResourceGrid
+              items={resourceItems.filter((item) =>
+                [item.title, item.description, item.notes, item.source]
+                  .join(" ")
+                  .toLowerCase()
+                  .includes(search.toLowerCase()),
+              )}
+              onOpen={(item) => navigate({ to: "/knowledge/$id", params: { id: item.id } })}
+              onFavorite={handleFavoriteToggle}
+            />
+          ) : visibleVault.length ? (
             <div className="rounded-3xl border border-border p-6 text-sm text-ink-soft text-center">
               No notes match your search.
             </div>
@@ -188,61 +372,107 @@ function KnowledgePage() {
       </div>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>{activeNote ? "Edit Note" : "Add Note"}</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4">
-            <Input
-              value={formState.title}
-              onChange={(event) => setFormState((prev) => ({ ...prev, title: event.target.value }))}
-              placeholder="Title"
-            />
-            <select
-              value={formState.type}
-              onChange={(event) => setFormState((prev) => ({ ...prev, type: event.target.value as "note" | "file" }))}
-              className="rounded-[10px] border border-border bg-background px-3 py-2 text-sm text-ink outline-none focus:ring-2 focus:ring-primary/30"
-            >
-              <option value="note">Note</option>
-              <option value="file">File</option>
-            </select>
-            {formState.type === "note" ? (
-              <Textarea
-                value={formState.content || ""}
-                onChange={(event) => setFormState((prev) => ({ ...prev, content: event.target.value }))}
-                placeholder="Content"
-              />
-            ) : (
-              <>
+        <DialogContent className="w-[calc(100vw-24px)] max-w-2xl overflow-hidden p-0 sm:rounded-[24px]">
+          <div className="flex max-h-[calc(100vh-24px)] flex-col">
+            <DialogHeader className="px-4 py-4 sm:px-6">
+              <DialogTitle>{activeNote ? "Edit Note" : "Add Note"}</DialogTitle>
+            </DialogHeader>
+            <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-6">
+              <div className="grid gap-4">
                 <Input
-                  value={formState.filename || ""}
-                  onChange={(event) => setFormState((prev) => ({ ...prev, filename: event.target.value }))}
-                  placeholder="Filename"
+                  value={formState.title}
+                  onChange={(event) =>
+                    setFormState((prev) => ({ ...prev, title: event.target.value }))
+                  }
+                  placeholder="Title"
                 />
-                <Input
-                  value={formState.url || ""}
-                  onChange={(event) => setFormState((prev) => ({ ...prev, url: event.target.value }))}
-                  placeholder="File URL or path"
-                />
-              </>
-            )}
+                <select
+                  value={formState.type}
+                  onChange={(event) =>
+                    setFormState((prev) => ({
+                      ...prev,
+                      type: event.target.value as "note" | "file",
+                    }))
+                  }
+                  className="rounded-[10px] border border-border bg-background px-3 py-2 text-sm text-ink outline-none focus:ring-2 focus:ring-primary/30"
+                >
+                  <option value="note">Note</option>
+                  <option value="file">File</option>
+                </select>
+                {formState.type === "note" ? (
+                  <Textarea
+                    value={formState.content || ""}
+                    onChange={(event) =>
+                      setFormState((prev) => ({ ...prev, content: event.target.value }))
+                    }
+                    placeholder="Content"
+                  />
+                ) : (
+                  <>
+                    <Input
+                      value={formState.filename || ""}
+                      onChange={(event) =>
+                        setFormState((prev) => ({ ...prev, filename: event.target.value }))
+                      }
+                      placeholder="Filename"
+                    />
+                    <Input
+                      value={formState.url || ""}
+                      onChange={(event) =>
+                        setFormState((prev) => ({ ...prev, url: event.target.value }))
+                      }
+                      placeholder="File URL or path"
+                    />
+                  </>
+                )}
+                {cloudEnabled ? (
+                  <div className="space-y-2 rounded-[12px] border border-border/70 bg-muted/30 p-3">
+                    <label className="text-[12px] font-medium text-ink-soft">Attach a file</label>
+                    <input
+                      type="file"
+                      onChange={(event) => setSelectedFile(event.target.files?.[0] ?? null)}
+                      className="block w-full text-[12px] text-ink-soft"
+                    />
+                    {existingFiles.length ? (
+                      <div className="space-y-2">
+                        {existingFiles.map((file) => (
+                          <div
+                            key={file.id}
+                            className="flex items-center justify-between rounded-[10px] border border-border/70 bg-background px-2.5 py-2 text-[12px]"
+                          >
+                            <span className="truncate">{file.file_name}</span>
+                            <button
+                              type="button"
+                              onClick={() => removeAttachment(file.id)}
+                              className="text-destructive"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
+              </div>
+            </div>
+            <DialogFooter className="border-t border-border px-4 py-4 sm:px-6">
+              <button
+                type="button"
+                onClick={() => setDialogOpen(false)}
+                className="h-9 rounded-[10px] border border-border px-4 text-sm text-ink-soft hover:bg-muted"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSave}
+                className="h-9 rounded-[10px] bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+              >
+                Save
+              </button>
+            </DialogFooter>
           </div>
-          <DialogFooter>
-            <button
-              type="button"
-              onClick={() => setDialogOpen(false)}
-              className="h-9 rounded-[10px] border border-border px-4 text-sm text-ink-soft hover:bg-muted"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={handleSave}
-              className="h-9 rounded-[10px] bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-            >
-              Save
-            </button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -250,7 +480,9 @@ function KnowledgePage() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete note</AlertDialogTitle>
-            <AlertDialogDescription>Are you sure you want to delete this note?</AlertDialogDescription>
+            <AlertDialogDescription>
+              Are you sure you want to delete this note?
+            </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setDeleteOpen(false)}>Cancel</AlertDialogCancel>

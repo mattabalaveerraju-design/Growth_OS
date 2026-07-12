@@ -12,14 +12,14 @@ export const Route = createFileRoute("/settings")({
 function SettingsPage() {
   const settings = useSettingsStore((state) => state.settings);
   const updateSettings = useSettingsStore((state) => state.updateSettings);
-  
+
   const [localSettings, setLocalSettings] = useState(settings);
 
   useEffect(() => {
     setLocalSettings(settings);
   }, [settings]);
 
-  const handleChange = (key: keyof typeof settings, value: any) => {
+  const handleChange = (key: keyof typeof settings, value: string | number | boolean) => {
     const updated = { ...localSettings, [key]: value };
     setLocalSettings(updated);
     updateSettings({ [key]: value });
@@ -42,14 +42,18 @@ function SettingsPage() {
               }`}
             >
               {t}
-              {i === 0 && <span className="absolute left-2 right-2 -bottom-px h-[2px] bg-primary rounded-full" />}
+              {i === 0 && (
+                <span className="absolute left-2 right-2 -bottom-px h-[2px] bg-primary rounded-full" />
+              )}
             </button>
           ))}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           <motion.section
-            initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
             className="card-soft p-6"
           >
             <h2 className="font-display text-[16px] font-semibold tracking-tight">Preferences</h2>
@@ -74,7 +78,9 @@ function SettingsPage() {
                 <EditableInput
                   value={localSettings.weeklyGoalHours.toString()}
                   sub="Total Hours Goal"
-                  onChange={(v) => handleChange("weeklyGoalHours", isNaN(Number(v)) ? 0 : Number(v))}
+                  onChange={(v) =>
+                    handleChange("weeklyGoalHours", isNaN(Number(v)) ? 0 : Number(v))
+                  }
                 />
                 <EditableInput
                   value={localSettings.weeklyGoalFocus}
@@ -124,10 +130,14 @@ function SettingsPage() {
           </motion.section>
 
           <motion.section
-            initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.05 }}
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.05 }}
             className="card-soft p-6"
           >
-            <h2 className="font-display text-[16px] font-semibold tracking-tight">Focus Preferences</h2>
+            <h2 className="font-display text-[16px] font-semibold tracking-tight">
+              Focus Preferences
+            </h2>
 
             <Toggle
               title="Focus Mode"
@@ -175,13 +185,23 @@ function SettingsPage() {
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="mt-5">
-      <div className="text-[11.5px] font-semibold tracking-[0.1em] text-ink-soft/80 uppercase mb-2">{label}</div>
+      <div className="text-[11.5px] font-semibold tracking-[0.1em] text-ink-soft/80 uppercase mb-2">
+        {label}
+      </div>
       {children}
     </div>
   );
 }
 
-function EditableInput({ value, sub, onChange }: { value: string; sub?: string; onChange: (v: string) => void }) {
+function EditableInput({
+  value,
+  sub,
+  onChange,
+}: {
+  value: string;
+  sub?: string;
+  onChange: (v: string) => void;
+}) {
   return (
     <div className="rounded-[10px] border border-border bg-card px-3 py-2.5">
       {sub && <div className="text-[10.5px] text-ink-soft/70 mb-0.5">{sub}</div>}
@@ -195,7 +215,17 @@ function EditableInput({ value, sub, onChange }: { value: string; sub?: string; 
   );
 }
 
-function Toggle({ title, sub, checked, onChange }: { title: string; sub: string; checked: boolean; onChange: (v: boolean) => void }) {
+function Toggle({
+  title,
+  sub,
+  checked,
+  onChange,
+}: {
+  title: string;
+  sub: string;
+  checked: boolean;
+  onChange: (v: boolean) => void;
+}) {
   return (
     <div className="flex items-start justify-between py-3.5 border-b border-border/60 last:border-0">
       <div className="min-w-0 pr-6">

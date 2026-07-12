@@ -4,7 +4,13 @@ import { persist, createJSONStorage } from "zustand/middleware";
 type Priority = "Low" | "Medium" | "High" | "Critical";
 export type TaskStatus = "Todo" | "In Progress" | "Done" | "Blocked" | "Review";
 export type FocusStatus = "Planned" | "In Progress" | "Completed";
-export type ApplicationStatus = "Wishlist" | "Applied" | "Screening" | "Interview" | "Offer" | "Rejected";
+export type ApplicationStatus =
+  | "Wishlist"
+  | "Applied"
+  | "Screening"
+  | "Interview"
+  | "Offer"
+  | "Rejected";
 
 export interface TaskItem {
   id: string;
@@ -25,6 +31,11 @@ export interface LearningItem {
   notes?: string;
   confidence: number;
   date: string;
+  favorite?: boolean;
+  lastOpenedAt?: string;
+  currentPage?: number;
+  progressPercentage?: number;
+  recentlyViewed?: boolean;
 }
 
 export interface ApplicationItem {
@@ -57,6 +68,11 @@ export interface VaultItem {
   url?: string;
   content?: string;
   createdAt: string;
+  favorite?: boolean;
+  lastOpenedAt?: string;
+  currentPage?: number;
+  progressPercentage?: number;
+  recentlyViewed?: boolean;
 }
 
 export interface ProjectItem {
@@ -136,7 +152,9 @@ const noopStorage = {
   removeItem: async () => {},
 };
 const storage: StorageApi | typeof noopStorage =
-  typeof window === "undefined" ? (noopStorage as any) : createJSONStorage(() => localStorage);
+  typeof window === "undefined"
+    ? (noopStorage as typeof noopStorage)
+    : createJSONStorage(() => localStorage);
 
 const createId = () =>
   typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
@@ -234,8 +252,7 @@ export const useTaskStore = create<TaskState>()(
       // We'll add functions to manage and auto-reset based on date
       // (kept lightweight here)
       // Note: not part of TaskState type above to avoid TS noise in callers that use TaskState only.
-      addTask: (task) =>
-        set((state) => ({ tasks: [...state.tasks, { id: createId(), ...task }] })),
+      addTask: (task) => set((state) => ({ tasks: [...state.tasks, { id: createId(), ...task }] })),
       updateTask: (id, updates) =>
         set((state) => ({
           tasks: state.tasks.map((task) => (task.id === id ? { ...task, ...updates } : task)),
@@ -270,13 +287,18 @@ export const useDailyChecklistStore = create<DailyChecklistState>()(
       addItem: (title: string) =>
         set((s) => ({ items: [...s.items, { id: createId(), title, completed: false }] })),
       toggleItem: (id: string) =>
-        set((s) => ({ items: s.items.map((it) => (it.id === id ? { ...it, completed: !it.completed } : it)) })),
+        set((s) => ({
+          items: s.items.map((it) => (it.id === id ? { ...it, completed: !it.completed } : it)),
+        })),
       deleteItem: (id: string) => set((s) => ({ items: s.items.filter((it) => it.id !== id) })),
       resetIfNeeded: () => {
         const today = new Date().toISOString().slice(0, 10);
         const state = get();
         if (!state.lastResetDate || state.lastResetDate.slice(0, 10) !== today) {
-          set({ items: state.items.map((it) => ({ ...it, completed: false })), lastResetDate: new Date().toISOString() });
+          set({
+            items: state.items.map((it) => ({ ...it, completed: false })),
+            lastResetDate: new Date().toISOString(),
+          });
         }
       },
     }),
@@ -288,10 +310,14 @@ export const useLearningStore = create<LearningState>()(
   persist(
     (set) => ({
       learning: [],
-      addLearning: (item) => set((state) => ({ learning: [...state.learning, { id: createId(), ...item }] })),
+      addLearning: (item) =>
+        set((state) => ({ learning: [...state.learning, { id: createId(), ...item }] })),
       updateLearning: (id, updates) =>
-        set((state) => ({ learning: state.learning.map((item) => (item.id === id ? { ...item, ...updates } : item)) })),
-      deleteLearning: (id) => set((state) => ({ learning: state.learning.filter((item) => item.id !== id) })),
+        set((state) => ({
+          learning: state.learning.map((item) => (item.id === id ? { ...item, ...updates } : item)),
+        })),
+      deleteLearning: (id) =>
+        set((state) => ({ learning: state.learning.filter((item) => item.id !== id) })),
     }),
     { name: "growthos_learning", storage },
   ),
@@ -302,7 +328,8 @@ export const useCalendarStore = create<CalendarState>()(
     (set) => ({
       events: [],
       addEvent: (e) => set((s) => ({ events: [...s.events, { id: createId(), ...e }] })),
-      updateEvent: (id, updates) => set((s) => ({ events: s.events.map((ev) => (ev.id === id ? { ...ev, ...updates } : ev)) })),
+      updateEvent: (id, updates) =>
+        set((s) => ({ events: s.events.map((ev) => (ev.id === id ? { ...ev, ...updates } : ev)) })),
       deleteEvent: (id) => set((s) => ({ events: s.events.filter((ev) => ev.id !== id) })),
     }),
     { name: "growthos_calendar", storage },
@@ -314,8 +341,11 @@ export const useVaultStore = create<VaultState>()(
     (set) => ({
       vault: [],
       addVaultItem: (item) =>
-        set((s) => ({ vault: [...s.vault, { id: createId(), createdAt: new Date().toISOString(), ...item }] })),
-      updateVaultItem: (id, updates) => set((s) => ({ vault: s.vault.map((v) => (v.id === id ? { ...v, ...updates } : v)) })),
+        set((s) => ({
+          vault: [...s.vault, { id: createId(), createdAt: new Date().toISOString(), ...item }],
+        })),
+      updateVaultItem: (id, updates) =>
+        set((s) => ({ vault: s.vault.map((v) => (v.id === id ? { ...v, ...updates } : v)) })),
       deleteVaultItem: (id) => set((s) => ({ vault: s.vault.filter((v) => v.id !== id) })),
     }),
     { name: "growthos_vault", storage },
@@ -327,9 +357,18 @@ export const useInterviewStore = create<InterviewState>()(
     (set) => ({
       interviewNotes: [],
       addInterviewNote: (item) =>
-        set((s) => ({ interviewNotes: [...s.interviewNotes, { id: createId(), createdAt: new Date().toISOString(), ...item }] })),
-      updateInterviewNote: (id, updates) => set((s) => ({ interviewNotes: s.interviewNotes.map((n) => (n.id === id ? { ...n, ...updates } : n)) })),
-      deleteInterviewNote: (id) => set((s) => ({ interviewNotes: s.interviewNotes.filter((n) => n.id !== id) })),
+        set((s) => ({
+          interviewNotes: [
+            ...s.interviewNotes,
+            { id: createId(), createdAt: new Date().toISOString(), ...item },
+          ],
+        })),
+      updateInterviewNote: (id, updates) =>
+        set((s) => ({
+          interviewNotes: s.interviewNotes.map((n) => (n.id === id ? { ...n, ...updates } : n)),
+        })),
+      deleteInterviewNote: (id) =>
+        set((s) => ({ interviewNotes: s.interviewNotes.filter((n) => n.id !== id) })),
     }),
     { name: "growthos_interview", storage },
   ),
@@ -339,8 +378,14 @@ export const useProjectsStore = create<ProjectsState>()(
   persist(
     (set) => ({
       projects: [],
-      addProject: (p) => set((s) => ({ projects: [...s.projects, { id: createId(), createdAt: new Date().toISOString(), ...p }] })),
-      updateProject: (id, updates) => set((s) => ({ projects: s.projects.map((pr) => (pr.id === id ? { ...pr, ...updates } : pr)) })),
+      addProject: (p) =>
+        set((s) => ({
+          projects: [...s.projects, { id: createId(), createdAt: new Date().toISOString(), ...p }],
+        })),
+      updateProject: (id, updates) =>
+        set((s) => ({
+          projects: s.projects.map((pr) => (pr.id === id ? { ...pr, ...updates } : pr)),
+        })),
       deleteProject: (id) => set((s) => ({ projects: s.projects.filter((pr) => pr.id !== id) })),
     }),
     { name: "growthos_projects", storage },
@@ -354,7 +399,11 @@ export const useApplicationStore = create<ApplicationState>()(
       addApplication: (item) =>
         set((state) => ({ applications: [...state.applications, { id: createId(), ...item }] })),
       updateApplication: (id, updates) =>
-        set((state) => ({ applications: state.applications.map((item) => (item.id === id ? { ...item, ...updates } : item)) })),
+        set((state) => ({
+          applications: state.applications.map((item) =>
+            item.id === id ? { ...item, ...updates } : item,
+          ),
+        })),
       deleteApplication: (id) =>
         set((state) => ({ applications: state.applications.filter((item) => item.id !== id) })),
     }),
@@ -366,8 +415,10 @@ export const useReadingStore = create<ReadingState>()(
   persist(
     (set) => ({
       reading: [],
-      addReading: (entry) => set((state) => ({ reading: [...state.reading, { id: createId(), ...entry }] })),
-      deleteReading: (id) => set((state) => ({ reading: state.reading.filter((entry) => entry.id !== id) })),
+      addReading: (entry) =>
+        set((state) => ({ reading: [...state.reading, { id: createId(), ...entry }] })),
+      deleteReading: (id) =>
+        set((state) => ({ reading: state.reading.filter((entry) => entry.id !== id) })),
     }),
     { name: "growthos_reading", storage },
   ),
@@ -377,8 +428,10 @@ export const useExerciseStore = create<ExerciseState>()(
   persist(
     (set) => ({
       exercise: [],
-      addExercise: (entry) => set((state) => ({ exercise: [...state.exercise, { id: createId(), ...entry }] })),
-      deleteExercise: (id) => set((state) => ({ exercise: state.exercise.filter((entry) => entry.id !== id) })),
+      addExercise: (entry) =>
+        set((state) => ({ exercise: [...state.exercise, { id: createId(), ...entry }] })),
+      deleteExercise: (id) =>
+        set((state) => ({ exercise: state.exercise.filter((entry) => entry.id !== id) })),
     }),
     { name: "growthos_exercise", storage },
   ),
@@ -397,7 +450,9 @@ export const useFocusStore = create<FocusState>()(
         })),
       updateFocusItem: (id, updates) =>
         set((state) => ({
-          focusItems: state.focusItems.map((item) => (item.id === id ? { ...item, ...updates } : item)),
+          focusItems: state.focusItems.map((item) =>
+            item.id === id ? { ...item, ...updates } : item,
+          ),
         })),
       deleteFocusItem: (id) =>
         set((state) => ({
@@ -438,7 +493,9 @@ export const useGoalStore = create<GoalState>()(
           goals: [...state.goals, { id: createId(), createdAt: new Date().toISOString(), ...item }],
         })),
       updateGoal: (id, updates) =>
-        set((state) => ({ goals: state.goals.map((goal) => (goal.id === id ? { ...goal, ...updates } : goal)) })),
+        set((state) => ({
+          goals: state.goals.map((goal) => (goal.id === id ? { ...goal, ...updates } : goal)),
+        })),
       deleteGoal: (id) => set((state) => ({ goals: state.goals.filter((goal) => goal.id !== id) })),
     }),
     { name: "growthos_goals", storage },

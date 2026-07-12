@@ -5,9 +5,24 @@ import { toast } from "sonner";
 import * as XLSX from "xlsx";
 import Papa from "papaparse";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { useApplicationStore, useExerciseStore, useFocusStore, useLearningStore, useReadingStore, useTaskStore, ApplicationStatus } from "@/stores/useGrowthStores";
+import {
+  useApplicationStore,
+  useExerciseStore,
+  useFocusStore,
+  useLearningStore,
+  useReadingStore,
+  useTaskStore,
+  ApplicationStatus,
+  type TaskItem,
+} from "@/stores/useGrowthStores";
 
 const MODULES = ["Learning", "Tasks", "Applications", "Reading", "Exercise"] as const;
 
@@ -56,7 +71,9 @@ function parseDuration(value: unknown): number {
 function normalizeDate(value: unknown) {
   if (!value) return new Date().toISOString().slice(0, 10);
   const parsed = new Date(String(value));
-  return Number.isNaN(parsed.getTime()) ? new Date().toISOString().slice(0, 10) : parsed.toISOString().slice(0, 10);
+  return Number.isNaN(parsed.getTime())
+    ? new Date().toISOString().slice(0, 10)
+    : parsed.toISOString().slice(0, 10);
 }
 
 function getValue(row: RawRow, key: string) {
@@ -65,7 +82,13 @@ function getValue(row: RawRow, key: string) {
   return foundKey ? row[foundKey] : undefined;
 }
 
-export function ImportCenterDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
+export function ImportCenterDialog({
+  open,
+  onOpenChange,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
   const addTask = useTaskStore((state) => state.addTask);
   const addLearning = useLearningStore((state) => state.addLearning);
   const addApplication = useApplicationStore((state) => state.addApplication);
@@ -165,8 +188,9 @@ export function ImportCenterDialog({ open, onOpenChange }: { open: boolean; onOp
             if (!title) throw new Error(`Missing title on row ${index + 1}`);
             addTask({
               title,
-              priority: (String(getValue(row, "Priority") ?? "Medium") as any) || "Medium",
-              status: (String(getValue(row, "Status") ?? "Todo") as any) || "Todo",
+              priority:
+                (String(getValue(row, "Priority") ?? "Medium") as TaskItem["priority"]) || "Medium",
+              status: (String(getValue(row, "Status") ?? "Todo") as TaskItem["status"]) || "Todo",
               dueDate: normalizeDate(getValue(row, "Due Date")),
               category: String(getValue(row, "Category") ?? "").trim() || "General",
               notes: String(getValue(row, "Notes") ?? "").trim(),
@@ -183,9 +207,13 @@ export function ImportCenterDialog({ open, onOpenChange }: { open: boolean; onOp
               country: String(getValue(row, "Country") ?? "").trim() || "",
               salary: String(getValue(row, "Salary") ?? "").trim() || "",
               appliedDate: normalizeDate(getValue(row, "Applied Date")),
-              status: (String(getValue(row, "Status") ?? "Applied").trim() || "Applied") as ApplicationStatus,
+              status: (String(getValue(row, "Status") ?? "Applied").trim() ||
+                "Applied") as ApplicationStatus,
               interviewStage: String(getValue(row, "Interview Stage") ?? "").trim() || "",
-              portfolioSent: String(getValue(row, "Portfolio Sent") ?? "No").trim().toLowerCase() === "yes",
+              portfolioSent:
+                String(getValue(row, "Portfolio Sent") ?? "No")
+                  .trim()
+                  .toLowerCase() === "yes",
               notes: String(getValue(row, "Notes") ?? "").trim(),
             });
             imported += 1;
@@ -235,120 +263,149 @@ export function ImportCenterDialog({ open, onOpenChange }: { open: boolean; onOp
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl">
-        <DialogHeader>
-          <DialogTitle>Import Center</DialogTitle>
-        </DialogHeader>
+      <DialogContent className="w-[calc(100vw-24px)] max-w-4xl overflow-hidden p-0 sm:rounded-[24px]">
+        <div className="flex max-h-[calc(100vh-24px)] flex-col">
+          <DialogHeader className="px-4 py-4 sm:px-6">
+            <DialogTitle>Import Center</DialogTitle>
+          </DialogHeader>
 
-        <div className="grid gap-4">
-          <div className="grid sm:grid-cols-[220px_1fr] gap-3 items-end">
-            <label className="block text-sm font-medium text-foreground">Import target</label>
-            <select
-              className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-1 focus-visible:ring-ring"
-              value={module}
-              onChange={(event) => setModule(event.target.value as ModuleName)}
-            >
-              {MODULES.map((item) => (
-                <option key={item} value={item}>{item}</option>
-              ))}
-            </select>
-          </div>
-
-          <div
-            className="rounded-3xl border border-dashed border-border/80 bg-muted/70 p-6 text-center transition hover:border-primary hover:bg-muted"
-            onDragOver={(event) => event.preventDefault()}
-            onDrop={handleDrop as any}
-          >
-            <p className="text-sm text-foreground">Drag and drop a CSV, XLSX, or JSON file here</p>
-            <p className="mt-2 text-sm text-foreground/80">or select a file to preview and import your {module.toLowerCase()} records.</p>
-            <div className="mt-4 flex items-center justify-center gap-2">
-              <label className="cursor-pointer rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">
-                Choose file
-                <Input
-                  type="file"
-                  accept=".csv,.xlsx,.json"
-                  className="hidden"
-                  onChange={(event) => {
-                    const file = event.target.files?.[0];
-                    if (file) void handleFile(file);
-                  }}
-                />
-              </label>
-              <Button variant="secondary" onClick={() => {
-                const headers = expectedColumns[module].join(",");
-                const blob = new Blob([headers], { type: "text/csv;charset=utf-8;" });
-                const url = URL.createObjectURL(blob);
-                const link = document.createElement("a");
-                link.href = url;
-                link.download = `${module.toLowerCase()}-template.csv`;
-                link.click();
-                URL.revokeObjectURL(url);
-              }}>
-                Download template
-              </Button>
-            </div>
-          </div>
-
-          <div className="grid sm:grid-cols-3 gap-3 text-sm">
-            <div className="rounded-2xl bg-card p-4">Rows found<div className="mt-2 text-2xl font-semibold">{rowCount}</div></div>
-            <div className="rounded-2xl bg-card p-4">Imported<div className="mt-2 text-2xl font-semibold">{importedCount}</div></div>
-            <div className="rounded-2xl bg-card p-4">Skipped<div className="mt-2 text-2xl font-semibold">{skippedCount}</div></div>
-          </div>
-
-          {errors.length > 0 && (
-            <div className="rounded-2xl border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive">
-              <strong>Validation errors</strong>
-              <ul className="mt-2 list-disc pl-5">
-                {errors.slice(0, 5).map((error, index) => (
-                  <li key={index}>{error}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {hasPreview ? (
-            <div className="overflow-x-auto rounded-3xl border border-border bg-card p-4">
-              <div className="mb-4 flex items-center justify-between gap-3">
-                <div>
-                  <div className="text-sm text-foreground">Preview</div>
-                  <div className="text-xs text-foreground/70">Showing the first {Math.min(6, previewRows.length)} rows</div>
-                </div>
-                <span className="rounded-full bg-muted px-3 py-1 text-xs text-foreground/80">{currentFile}</span>
-              </div>
-              <table className="min-w-full text-sm">
-                <thead>
-                  <tr className="text-left text-xs uppercase tracking-[0.22em] text-foreground/70">
-                    {expectedColumns[module].map((key) => (
-                      <th key={key} className="py-2 pr-4">{key}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {previewRows.slice(0, 6).map((row, rowIndex) => (
-                    <tr key={rowIndex} className="border-t border-border/60">
-                      {expectedColumns[module].map((key) => (
-                        <td key={key} className="py-3 pr-4 align-top text-sm text-foreground/80">{String(getValue(row, key) ?? "")}</td>
-                      ))}
-                    </tr>
+          <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-6">
+            <div className="grid gap-4">
+              <div className="grid grid-cols-1 gap-3 items-end sm:grid-cols-[220px_1fr]">
+                <label className="block text-sm font-medium text-foreground">Import target</label>
+                <select
+                  className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  value={module}
+                  onChange={(event) => setModule(event.target.value as ModuleName)}
+                >
+                  {MODULES.map((item) => (
+                    <option key={item} value={item}>
+                      {item}
+                    </option>
                   ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <div className="rounded-3xl border border-border/60 bg-card p-6 text-center text-sm text-foreground/80">
-              No file selected. Add a sheet with the required columns above to see a preview.
-            </div>
-          )}
-        </div>
+                </select>
+              </div>
 
-        <DialogFooter>
-          <Button variant="secondary" onClick={() => onOpenChange(false)} type="button">
-            Close
-          </Button>
-          <Button disabled={!hasPreview} onClick={handleImport} type="button">
-            Import {module}
-          </Button>
-        </DialogFooter>
+              <div
+                className="rounded-3xl border border-dashed border-border/80 bg-muted/70 p-6 text-center transition hover:border-primary hover:bg-muted"
+                onDragOver={(event) => event.preventDefault()}
+                onDrop={(event) => void handleDrop(event)}
+              >
+                <p className="text-sm text-foreground">
+                  Drag and drop a CSV, XLSX, or JSON file here
+                </p>
+                <p className="mt-2 text-sm text-foreground/80">
+                  or select a file to preview and import your {module.toLowerCase()} records.
+                </p>
+                <div className="mt-4 flex flex-col items-center justify-center gap-2 sm:flex-row">
+                  <label className="cursor-pointer rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">
+                    Choose file
+                    <Input
+                      type="file"
+                      accept=".csv,.xlsx,.json"
+                      className="hidden"
+                      onChange={(event) => {
+                        const file = event.target.files?.[0];
+                        if (file) void handleFile(file);
+                      }}
+                    />
+                  </label>
+                  <Button
+                    variant="secondary"
+                    onClick={() => {
+                      const headers = expectedColumns[module].join(",");
+                      const blob = new Blob([headers], { type: "text/csv;charset=utf-8;" });
+                      const url = URL.createObjectURL(blob);
+                      const link = document.createElement("a");
+                      link.href = url;
+                      link.download = `${module.toLowerCase()}-template.csv`;
+                      link.click();
+                      URL.revokeObjectURL(url);
+                    }}
+                  >
+                    Download template
+                  </Button>
+                </div>
+              </div>
+
+              <div className="grid gap-3 text-sm sm:grid-cols-3">
+                <div className="rounded-2xl bg-card p-4">
+                  Rows found<div className="mt-2 text-2xl font-semibold">{rowCount}</div>
+                </div>
+                <div className="rounded-2xl bg-card p-4">
+                  Imported<div className="mt-2 text-2xl font-semibold">{importedCount}</div>
+                </div>
+                <div className="rounded-2xl bg-card p-4">
+                  Skipped<div className="mt-2 text-2xl font-semibold">{skippedCount}</div>
+                </div>
+              </div>
+
+              {errors.length > 0 && (
+                <div className="rounded-2xl border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive">
+                  <strong>Validation errors</strong>
+                  <ul className="mt-2 list-disc pl-5">
+                    {errors.slice(0, 5).map((error, index) => (
+                      <li key={index}>{error}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {hasPreview ? (
+                <div className="overflow-x-auto rounded-3xl border border-border bg-card p-4">
+                  <div className="mb-4 flex items-center justify-between gap-3">
+                    <div>
+                      <div className="text-sm text-foreground">Preview</div>
+                      <div className="text-xs text-foreground/70">
+                        Showing the first {Math.min(6, previewRows.length)} rows
+                      </div>
+                    </div>
+                    <span className="rounded-full bg-muted px-3 py-1 text-xs text-foreground/80">
+                      {currentFile}
+                    </span>
+                  </div>
+                  <table className="min-w-full text-sm">
+                    <thead>
+                      <tr className="text-left text-xs uppercase tracking-[0.22em] text-foreground/70">
+                        {expectedColumns[module].map((key) => (
+                          <th key={key} className="py-2 pr-4">
+                            {key}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {previewRows.slice(0, 6).map((row, rowIndex) => (
+                        <tr key={rowIndex} className="border-t border-border/60">
+                          {expectedColumns[module].map((key) => (
+                            <td
+                              key={key}
+                              className="py-3 pr-4 align-top text-sm text-foreground/80"
+                            >
+                              {String(getValue(row, key) ?? "")}
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="rounded-3xl border border-border/60 bg-card p-6 text-center text-sm text-foreground/80">
+                  No file selected. Add a sheet with the required columns above to see a preview.
+                </div>
+              )}
+            </div>
+          </div>
+          <DialogFooter className="border-t border-border px-4 py-4 sm:px-6">
+            <Button variant="secondary" onClick={() => onOpenChange(false)} type="button">
+              Close
+            </Button>
+            <Button disabled={!hasPreview} onClick={handleImport} type="button">
+              Import {module}
+            </Button>
+          </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   );

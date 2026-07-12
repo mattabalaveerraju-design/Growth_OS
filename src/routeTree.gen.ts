@@ -24,6 +24,9 @@ import { Route as CoachRouteImport } from './routes/coach'
 import { Route as CalendarRouteImport } from './routes/calendar'
 import { Route as AnalyticsRouteImport } from './routes/analytics'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ReadingIdRouteImport } from './routes/reading/$id'
+import { Route as LearningIdRouteImport } from './routes/learning/$id'
+import { Route as KnowledgeIdRouteImport } from './routes/knowledge/$id'
 
 const TasksRoute = TasksRouteImport.update({
   id: '/tasks',
@@ -100,6 +103,21 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ReadingIdRoute = ReadingIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => ReadingRoute,
+} as any)
+const LearningIdRoute = LearningIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => LearningRoute,
+} as any)
+const KnowledgeIdRoute = KnowledgeIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => KnowledgeRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -111,12 +129,15 @@ export interface FileRoutesByFullPath {
   '/focus': typeof FocusRoute
   '/goals': typeof GoalsRoute
   '/jobs': typeof JobsRoute
-  '/knowledge': typeof KnowledgeRoute
-  '/learning': typeof LearningRoute
+  '/knowledge': typeof KnowledgeRouteWithChildren
+  '/learning': typeof LearningRouteWithChildren
   '/projects': typeof ProjectsRoute
-  '/reading': typeof ReadingRoute
+  '/reading': typeof ReadingRouteWithChildren
   '/settings': typeof SettingsRoute
   '/tasks': typeof TasksRoute
+  '/knowledge/$id': typeof KnowledgeIdRoute
+  '/learning/$id': typeof LearningIdRoute
+  '/reading/$id': typeof ReadingIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -128,12 +149,15 @@ export interface FileRoutesByTo {
   '/focus': typeof FocusRoute
   '/goals': typeof GoalsRoute
   '/jobs': typeof JobsRoute
-  '/knowledge': typeof KnowledgeRoute
-  '/learning': typeof LearningRoute
+  '/knowledge': typeof KnowledgeRouteWithChildren
+  '/learning': typeof LearningRouteWithChildren
   '/projects': typeof ProjectsRoute
-  '/reading': typeof ReadingRoute
+  '/reading': typeof ReadingRouteWithChildren
   '/settings': typeof SettingsRoute
   '/tasks': typeof TasksRoute
+  '/knowledge/$id': typeof KnowledgeIdRoute
+  '/learning/$id': typeof LearningIdRoute
+  '/reading/$id': typeof ReadingIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -146,12 +170,15 @@ export interface FileRoutesById {
   '/focus': typeof FocusRoute
   '/goals': typeof GoalsRoute
   '/jobs': typeof JobsRoute
-  '/knowledge': typeof KnowledgeRoute
-  '/learning': typeof LearningRoute
+  '/knowledge': typeof KnowledgeRouteWithChildren
+  '/learning': typeof LearningRouteWithChildren
   '/projects': typeof ProjectsRoute
-  '/reading': typeof ReadingRoute
+  '/reading': typeof ReadingRouteWithChildren
   '/settings': typeof SettingsRoute
   '/tasks': typeof TasksRoute
+  '/knowledge/$id': typeof KnowledgeIdRoute
+  '/learning/$id': typeof LearningIdRoute
+  '/reading/$id': typeof ReadingIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -171,6 +198,9 @@ export interface FileRouteTypes {
     | '/reading'
     | '/settings'
     | '/tasks'
+    | '/knowledge/$id'
+    | '/learning/$id'
+    | '/reading/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -188,6 +218,9 @@ export interface FileRouteTypes {
     | '/reading'
     | '/settings'
     | '/tasks'
+    | '/knowledge/$id'
+    | '/learning/$id'
+    | '/reading/$id'
   id:
     | '__root__'
     | '/'
@@ -205,6 +238,9 @@ export interface FileRouteTypes {
     | '/reading'
     | '/settings'
     | '/tasks'
+    | '/knowledge/$id'
+    | '/learning/$id'
+    | '/reading/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -217,10 +253,10 @@ export interface RootRouteChildren {
   FocusRoute: typeof FocusRoute
   GoalsRoute: typeof GoalsRoute
   JobsRoute: typeof JobsRoute
-  KnowledgeRoute: typeof KnowledgeRoute
-  LearningRoute: typeof LearningRoute
+  KnowledgeRoute: typeof KnowledgeRouteWithChildren
+  LearningRoute: typeof LearningRouteWithChildren
   ProjectsRoute: typeof ProjectsRoute
-  ReadingRoute: typeof ReadingRoute
+  ReadingRoute: typeof ReadingRouteWithChildren
   SettingsRoute: typeof SettingsRoute
   TasksRoute: typeof TasksRoute
 }
@@ -332,8 +368,64 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/reading/$id': {
+      id: '/reading/$id'
+      path: '/$id'
+      fullPath: '/reading/$id'
+      preLoaderRoute: typeof ReadingIdRouteImport
+      parentRoute: typeof ReadingRoute
+    }
+    '/learning/$id': {
+      id: '/learning/$id'
+      path: '/$id'
+      fullPath: '/learning/$id'
+      preLoaderRoute: typeof LearningIdRouteImport
+      parentRoute: typeof LearningRoute
+    }
+    '/knowledge/$id': {
+      id: '/knowledge/$id'
+      path: '/$id'
+      fullPath: '/knowledge/$id'
+      preLoaderRoute: typeof KnowledgeIdRouteImport
+      parentRoute: typeof KnowledgeRoute
+    }
   }
 }
+
+interface KnowledgeRouteChildren {
+  KnowledgeIdRoute: typeof KnowledgeIdRoute
+}
+
+const KnowledgeRouteChildren: KnowledgeRouteChildren = {
+  KnowledgeIdRoute: KnowledgeIdRoute,
+}
+
+const KnowledgeRouteWithChildren = KnowledgeRoute._addFileChildren(
+  KnowledgeRouteChildren,
+)
+
+interface LearningRouteChildren {
+  LearningIdRoute: typeof LearningIdRoute
+}
+
+const LearningRouteChildren: LearningRouteChildren = {
+  LearningIdRoute: LearningIdRoute,
+}
+
+const LearningRouteWithChildren = LearningRoute._addFileChildren(
+  LearningRouteChildren,
+)
+
+interface ReadingRouteChildren {
+  ReadingIdRoute: typeof ReadingIdRoute
+}
+
+const ReadingRouteChildren: ReadingRouteChildren = {
+  ReadingIdRoute: ReadingIdRoute,
+}
+
+const ReadingRouteWithChildren =
+  ReadingRoute._addFileChildren(ReadingRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -345,10 +437,10 @@ const rootRouteChildren: RootRouteChildren = {
   FocusRoute: FocusRoute,
   GoalsRoute: GoalsRoute,
   JobsRoute: JobsRoute,
-  KnowledgeRoute: KnowledgeRoute,
-  LearningRoute: LearningRoute,
+  KnowledgeRoute: KnowledgeRouteWithChildren,
+  LearningRoute: LearningRouteWithChildren,
   ProjectsRoute: ProjectsRoute,
-  ReadingRoute: ReadingRoute,
+  ReadingRoute: ReadingRouteWithChildren,
   SettingsRoute: SettingsRoute,
   TasksRoute: TasksRoute,
 }
