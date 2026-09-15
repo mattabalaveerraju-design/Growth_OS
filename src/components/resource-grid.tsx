@@ -6,9 +6,11 @@ interface ResourceGridProps {
   items: ResourceItem[];
   onOpen: (item: ResourceItem) => void;
   onFavorite?: (item: ResourceItem) => void;
+  onEdit?: (item: ResourceItem) => void;
+  onDelete?: (item: ResourceItem) => void;
 }
 
-export function ResourceGrid({ items, onOpen, onFavorite }: ResourceGridProps) {
+export function ResourceGrid({ items, onOpen, onFavorite, onEdit, onDelete }: ResourceGridProps) {
   if (!items.length) {
     return (
       <EmptyState
@@ -21,7 +23,14 @@ export function ResourceGrid({ items, onOpen, onFavorite }: ResourceGridProps) {
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
       {items.map((item) => (
-        <ResourceCard key={item.id} item={item} onOpen={onOpen} onFavorite={onFavorite} />
+        <ResourceCard
+          key={item.id}
+          item={item}
+          onOpen={onOpen}
+          onFavorite={onFavorite}
+          onEdit={onEdit}
+          onDelete={onDelete}
+        />
       ))}
     </div>
   );

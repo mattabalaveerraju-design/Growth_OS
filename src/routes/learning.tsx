@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import {
@@ -89,6 +89,10 @@ function LearningPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [activeLearning, setActiveLearning] = useState<LearningItem | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [formError, setFormError] = useState("");
+  const [deleteError, setDeleteError] = useState("");
   const [formState, setFormState] = useState<Omit<LearningItem, "id">>({
     topic: "",
     category: "UI Design",
@@ -224,6 +228,7 @@ function LearningPage() {
 
   const openNew = () => {
     setActiveLearning(null);
+    setFormError("");
     setSelectedFile(null);
     setExistingFiles([]);
     setFormState({
@@ -240,6 +245,7 @@ function LearningPage() {
 
   const openEdit = (item: LearningItem) => {
     setActiveLearning(item);
+    setFormError("");
     setSelectedFile(null);
     setExistingFiles([]);
     setFormState({
@@ -255,68 +261,90 @@ function LearningPage() {
   };
 
   const handleSave = async () => {
+    if (isSaving) return;
     const normalizedTopic = formState.topic.trim();
     const normalizedSource = formState.source.trim();
-    if (!normalizedTopic || !normalizedSource) return;
-
-    if (cloudEnabled) {
-      const saved = await upsertCloudCard("learning", {
-        id: activeLearning?.id,
-        title: normalizedTopic,
-        category: formState.category,
-        content: formState.notes ?? "",
-        summary: normalizedSource,
-        metadata: {
-          source: normalizedSource,
-          timeHours: formState.timeHours,
-          confidence: formState.confidence,
-          date: formState.date,
-        },
-      });
-
-      if (saved) {
-        setCloudItems((prev) => {
-          const next = prev.filter((item) => item.id !== saved.id);
-          return [saved, ...next];
-        });
-        if (selectedFile) {
-          await uploadCloudFile("learning", saved.id, selectedFile);
-          const files = await listCloudFiles("learning", saved.id);
-          setExistingFiles(files);
-        }
-        setDialogOpen(false);
-        setSelectedFile(null);
-        setActiveLearning(null);
-      }
+    if (!normalizedTopic || !normalizedSource) {
+      setFormError("Topic and source are required.");
       return;
     }
 
-    if (activeLearning) {
-      updateLearning(activeLearning.id, {
-        ...formState,
-        topic: normalizedTopic,
-        source: normalizedSource,
-      });
-    } else {
-      addLearning({ ...formState, topic: normalizedTopic, source: normalizedSource });
+    setIsSaving(true);
+    setFormError("");
+    try {
+      if (cloudEnabled) {
+        const saved = await upsertCloudCard("learning", {
+          id: activeLearning?.id,
+          title: normalizedTopic,
+          category: formState.category,
+          content: formState.notes ?? "",
+          summary: normalizedSource,
+          metadata: {
+            source: normalizedSource,
+            timeHours: formState.timeHours,
+            confidence: formState.confidence,
+            date: formState.date,
+          },
+        });
+        if (!saved) {
+          setFormError("Could not save this learning record. Please try again.");
+          return;
+        }
+        setCloudItems((prev) => [saved, ...prev.filter((item) => item.id !== saved.id)]);
+        if (selectedFile) {
+          await uploadCloudFile("learning", saved.id, selectedFile);
+          setExistingFiles(await listCloudFiles("learning", saved.id));
+        }
+      } else if (activeLearning) {
+        updateLearning(activeLearning.id, {
+          ...formState,
+          topic: normalizedTopic,
+          source: normalizedSource,
+        });
+      } else {
+        addLearning({ ...formState, topic: normalizedTopic, source: normalizedSource });
+      }
+      setDialogOpen(false);
+      setSelectedFile(null);
+      setActiveLearning(null);
+    } catch {
+      setFormError("Could not save this learning record. Please try again.");
+    } finally {
+      setIsSaving(false);
     }
-    setDialogOpen(false);
   };
 
   const handleDelete = async () => {
-    if (!activeLearning) return;
-    if (cloudEnabled) {
-      await deleteCloudCard("learning", activeLearning.id);
-      setCloudItems((prev) => prev.filter((item) => item.id !== activeLearning.id));
+    if (!activeLearning || isDeleting) return;
+    setIsDeleting(true);
+    setDeleteError("");
+    try {
+      if (cloudEnabled) {
+        const deleted = await deleteCloudCard("learning", activeLearning.id);
+        if (!deleted) {
+          setDeleteError("Could not delete this learning record. Please try again.");
+          return;
+        }
+        setCloudItems((prev) => prev.filter((item) => item.id !== activeLearning.id));
+      } else {
+        deleteLearning(activeLearning.id);
+      }
       setDeleteOpen(false);
       setDialogOpen(false);
       setActiveLearning(null);
-      return;
+    } catch {
+      setDeleteError("Could not delete this learning record. Please try again.");
+    } finally {
+      setIsDeleting(false);
     }
+  };
 
-    deleteLearning(activeLearning.id);
-    setDeleteOpen(false);
-    setDialogOpen(false);
+  const requestDelete = (item: ResourceItem) => {
+    const learningItem = visibleLearning.find((candidate) => candidate.id === item.id);
+    if (!learningItem) return;
+    setActiveLearning(learningItem);
+    setDeleteError("");
+    setDeleteOpen(true);
   };
 
   const removeAttachment = async (fileId: string) => {
@@ -412,6 +440,11 @@ function LearningPage() {
                 items={filteredLearning}
                 onOpen={(item) => navigate({ to: "/learning/$id", params: { id: item.id } })}
                 onFavorite={handleFavoriteToggle}
+                onEdit={(item) => {
+                  const learningItem = visibleLearning.find((candidate) => candidate.id === item.id);
+                  if (learningItem) openEdit(learningItem);
+                }}
+                onDelete={requestDelete}
               />
             ) : visibleLearning.length ? (
               <div className="rounded-3xl border border-border p-6 text-sm text-ink-soft text-center">
@@ -508,77 +541,97 @@ function LearningPage() {
           <div className="flex max-h-[calc(100vh-24px)] flex-col">
             <DialogHeader className="px-4 py-4 sm:px-6">
               <DialogTitle>{activeLearning ? "Edit Learning" : "Add Learning"}</DialogTitle>
+              <p className="text-sm text-ink-soft">
+                Capture the topic, source, and context so this record stays useful later.
+              </p>
             </DialogHeader>
             <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-6">
               <div className="grid gap-4">
-                <Input
-                  value={formState.topic}
-                  onChange={(event) =>
-                    setFormState((prev) => ({ ...prev, topic: event.target.value }))
-                  }
-                  placeholder="Topic"
-                />
-                <Input
-                  value={formState.source}
-                  onChange={(event) =>
-                    setFormState((prev) => ({ ...prev, source: event.target.value }))
-                  }
-                  placeholder="Source"
-                />
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <select
-                    value={formState.category}
-                    onChange={(event) =>
-                      setFormState((prev) => ({ ...prev, category: event.target.value }))
-                    }
-                    className="rounded-[10px] border border-border bg-background px-3 py-2 text-sm text-ink outline-none focus:ring-2 focus:ring-primary/30"
-                  >
-                    {categories.map((category) => (
-                      <option key={category} value={category}>
-                        {category}
-                      </option>
-                    ))}
-                  </select>
+                <FormField label="Topic" required>
                   <Input
-                    type="number"
-                    min={0}
-                    step={0.1}
-                    value={formState.timeHours}
+                    value={formState.topic}
                     onChange={(event) =>
-                      setFormState((prev) => ({ ...prev, timeHours: Number(event.target.value) }))
+                      setFormState((prev) => ({ ...prev, topic: event.target.value }))
                     }
-                    placeholder="Hours"
+                    placeholder="Enter learning topic"
                   />
+                </FormField>
+                <FormField label="Source" required>
+                  <Input
+                    value={formState.source}
+                    onChange={(event) =>
+                      setFormState((prev) => ({ ...prev, source: event.target.value }))
+                    }
+                    placeholder="Add a source or reference"
+                  />
+                </FormField>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <FormField label="Category" required>
+                    <select
+                      value={formState.category}
+                      onChange={(event) =>
+                        setFormState((prev) => ({ ...prev, category: event.target.value }))
+                      }
+                      className="h-10 rounded-[10px] border border-border bg-background px-3 py-2 text-sm text-ink outline-none focus:ring-2 focus:ring-primary/30"
+                    >
+                      {categories.map((category) => (
+                        <option key={category} value={category}>
+                          {category}
+                        </option>
+                      ))}
+                    </select>
+                  </FormField>
+                  <FormField label="Learning time" optional>
+                    <Input
+                      type="number"
+                      min={0}
+                      step={0.1}
+                      value={formState.timeHours}
+                      onChange={(event) =>
+                        setFormState((prev) => ({ ...prev, timeHours: Number(event.target.value) }))
+                      }
+                      placeholder="Hours"
+                    />
+                  </FormField>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <Input
-                    type="number"
-                    min={0}
-                    max={100}
-                    value={formState.confidence}
-                    onChange={(event) =>
-                      setFormState((prev) => ({ ...prev, confidence: Number(event.target.value) }))
-                    }
-                    placeholder="Confidence (%)"
-                  />
-                  <Input
-                    type="date"
-                    value={formState.date}
-                    onChange={(event) =>
-                      setFormState((prev) => ({ ...prev, date: event.target.value }))
-                    }
-                  />
+                  <FormField label="Confidence" optional helper="0 to 100 percent">
+                    <Input
+                      type="number"
+                      min={0}
+                      max={100}
+                      value={formState.confidence}
+                      onChange={(event) =>
+                        setFormState((prev) => ({ ...prev, confidence: Number(event.target.value) }))
+                      }
+                      placeholder="Confidence percentage"
+                    />
+                  </FormField>
+                  <FormField label="Date" required>
+                    <Input
+                      type="date"
+                      value={formState.date}
+                      onChange={(event) =>
+                        setFormState((prev) => ({ ...prev, date: event.target.value }))
+                      }
+                    />
+                  </FormField>
                 </div>
-                <Textarea
-                  value={formState.notes}
-                  onChange={(event) =>
-                    setFormState((prev) => ({ ...prev, notes: event.target.value }))
-                  }
-                  placeholder="Notes"
-                />
+                <FormField label="Notes" optional>
+                  <Textarea
+                    value={formState.notes}
+                    onChange={(event) =>
+                      setFormState((prev) => ({ ...prev, notes: event.target.value }))
+                    }
+                    placeholder="Add notes about what you learned"
+                  />
+                </FormField>
+                {formError ? <p className="text-sm text-destructive">{formError}</p> : null}
                 {cloudEnabled ? (
                   <div className="space-y-2 rounded-[12px] border border-border/70 bg-muted/30 p-3">
-                    <label className="text-[12px] font-medium text-ink-soft">Attach a file</label>
+                    <label className="text-[12px] font-medium text-ink-soft">
+                      Attachment <span className="font-normal">(Optional)</span>
+                    </label>
                     <input
                       type="file"
                       onChange={(event) => setSelectedFile(event.target.files?.[0] ?? null)}
@@ -601,9 +654,9 @@ function LearningPage() {
                             </button>
                           </div>
                         ))}
-                      </div>
+                          </div>
                     ) : null}
-                  </div>
+                        </div>
                 ) : null}
               </div>
             </div>
@@ -618,9 +671,10 @@ function LearningPage() {
               <button
                 type="button"
                 onClick={handleSave}
-                className="h-9 rounded-[10px] bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+                disabled={isSaving}
+                className="h-9 rounded-[10px] bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                Save
+                {isSaving ? "Saving..." : activeLearning ? "Save Changes" : "Add Learning"}
               </button>
             </DialogFooter>
           </div>
@@ -630,18 +684,44 @@ function LearningPage() {
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete learning record</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete this learning entry?
-            </AlertDialogDescription>
+            <AlertDialogTitle>Delete this item?</AlertDialogTitle>
+            <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
+            {deleteError ? <p className="text-sm text-destructive">{deleteError}</p> : null}
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setDeleteOpen(false)}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+            <AlertDialogAction onClick={handleDelete} disabled={isDeleting}>
+              {isDeleting ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </AppShell>
+  );
+}
+
+function FormField({
+  label,
+  required,
+  optional,
+  helper,
+  children,
+}: {
+  label: string;
+  required?: boolean;
+  optional?: boolean;
+  helper?: string;
+  children: ReactNode;
+}) {
+  return (
+    <label className="grid gap-1.5 text-[12px] font-medium text-ink-soft">
+      <span>
+        {label} {required ? <span className="text-destructive">*</span> : null}
+        {optional ? <span className="font-normal"> (Optional)</span> : null}
+      </span>
+      {children}
+      {helper ? <span className="text-[11px] font-normal text-ink-soft/70">{helper}</span> : null}
+    </label>
   );
 }
 

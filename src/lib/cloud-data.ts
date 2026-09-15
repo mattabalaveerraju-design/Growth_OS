@@ -118,6 +118,10 @@ function parseStoredCardDescription(description?: string | null) {
       const tags = Array.isArray(parsed.tags)
         ? parsed.tags.filter((tag): tag is string => typeof tag === "string")
         : [];
+      const metadata =
+        parsed.metadata && typeof parsed.metadata === "object"
+          ? (parsed.metadata as Record<string, unknown>)
+          : {};
 
       return {
         notes,
@@ -127,6 +131,7 @@ function parseStoredCardDescription(description?: string | null) {
         favorite,
         category,
         tags,
+        metadata,
       };
     }
   } catch {
@@ -141,6 +146,7 @@ function parseStoredCardDescription(description?: string | null) {
     favorite: false,
     category: null as string | null,
     tags: [] as string[],
+    metadata: {} as Record<string, unknown>,
   };
 }
 
@@ -177,6 +183,7 @@ function serializeStoredCardDescription(notes: string, metadata: Record<string, 
     favorite,
     category,
     tags,
+    metadata,
   });
 }
 
@@ -192,6 +199,7 @@ function normalizeCloudCardRecord(record: Record<string, unknown>, kind: CloudCa
     summary: parsedDescription.notes,
     category: typeof record.category === "string" ? record.category : parsedDescription.category,
     metadata: {
+      ...parsedDescription.metadata,
       notes: parsedDescription.notes,
       progressPercentage: parsedDescription.progressPercentage,
       currentPage: parsedDescription.currentPage,
@@ -323,7 +331,9 @@ export async function upsertCloudCard(
     return null;
   }
 
-  return data as CloudCardRecord | null;
+  return data
+    ? normalizeCloudCardRecord(data as Record<string, unknown>, kind)
+    : null;
 }
 
 export async function updateCloudCardProgress(
@@ -353,6 +363,7 @@ export async function updateCloudCardProgress(
       : null,
   );
   const nextDescription = serializeStoredCardDescription(existingDescription.notes, {
+    ...existingDescription.metadata,
     ...metadata,
     progress_percentage:
       updates.progress_percentage ??
@@ -432,7 +443,9 @@ export async function updateCloudCardProgress(
     }
   }
 
-  return data as CloudCardRecord | null;
+  return data
+    ? normalizeCloudCardRecord(data as Record<string, unknown>, kind)
+    : null;
 }
 
 export async function deleteCloudCard(kind: CloudCardKind, id: string) {

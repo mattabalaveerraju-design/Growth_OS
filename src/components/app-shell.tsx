@@ -208,7 +208,7 @@ export function AppShell({ children, title }: { children: ReactNode; title?: str
 
             <div className="mt-3 flex items-center gap-2.5 rounded-[8px] border border-border/60 bg-muted/40 px-2.5 py-2.5">
               <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[oklch(0.95_0.03_260)] text-[11px] font-semibold text-ink">
-                AM
+                26
               </div>
               <div className="min-w-0 flex-1">
                 <div className="truncate text-[13px] font-semibold text-ink">Balu Matta</div>

@@ -1,13 +1,15 @@
-import { BookOpen, FileText, Heart, Star } from "lucide-react";
+import { BookOpen, FileText, Heart, Pencil, Star, Trash2 } from "lucide-react";
 import type { ResourceItem } from "@/lib/resource-types";
 
 interface ResourceCardProps {
   item: ResourceItem;
   onOpen: (item: ResourceItem) => void;
   onFavorite?: (item: ResourceItem) => void;
+  onEdit?: (item: ResourceItem) => void;
+  onDelete?: (item: ResourceItem) => void;
 }
 
-export function ResourceCard({ item, onOpen, onFavorite }: ResourceCardProps) {
+export function ResourceCard({ item, onOpen, onFavorite, onEdit, onDelete }: ResourceCardProps) {
   const icon =
     item.category === "pdf" || item.filename?.toLowerCase().includes("pdf") ? FileText : BookOpen;
   const Icon = icon;
@@ -30,22 +32,51 @@ export function ResourceCard({ item, onOpen, onFavorite }: ResourceCardProps) {
         <div className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-primary/10 text-primary">
           <Icon className="h-5 w-5" />
         </div>
-        {onFavorite ? (
-          <button
-            type="button"
-            onClick={(event) => {
-              event.stopPropagation();
-              onFavorite(item);
-            }}
-            className="rounded-full p-1.5 text-ink-soft transition hover:bg-muted"
-          >
-            {item.favorite ? (
-              <Heart className="h-4 w-4 fill-current text-rose-500" />
-            ) : (
-              <Heart className="h-4 w-4" />
-            )}
-          </button>
-        ) : null}
+        <div className="flex items-center gap-1">
+          {onFavorite ? (
+            <button
+              type="button"
+              aria-label={item.favorite ? "Remove favorite" : "Add favorite"}
+              onClick={(event) => {
+                event.stopPropagation();
+                onFavorite(item);
+              }}
+              className="rounded-full p-1.5 text-ink-soft transition hover:bg-muted"
+            >
+              {item.favorite ? (
+                <Heart className="h-4 w-4 fill-current text-rose-500" />
+              ) : (
+                <Heart className="h-4 w-4" />
+              )}
+            </button>
+          ) : null}
+          {onEdit ? (
+            <button
+              type="button"
+              aria-label={`Edit ${item.title}`}
+              onClick={(event) => {
+                event.stopPropagation();
+                onEdit(item);
+              }}
+              className="rounded-full p-1.5 text-ink-soft opacity-0 transition hover:bg-muted group-hover:opacity-100 focus-visible:opacity-100"
+            >
+              <Pencil className="h-4 w-4" />
+            </button>
+          ) : null}
+          {onDelete ? (
+            <button
+              type="button"
+              aria-label={`Delete ${item.title}`}
+              onClick={(event) => {
+                event.stopPropagation();
+                onDelete(item);
+              }}
+              className="rounded-full p-1.5 text-destructive opacity-0 transition hover:bg-destructive/10 group-hover:opacity-100 focus-visible:opacity-100"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          ) : null}
+        </div>
       </div>
       <div className="mt-4 space-y-2">
         <div className="flex items-center gap-2">

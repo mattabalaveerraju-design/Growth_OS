@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { Plus, Search, Trash2 } from "lucide-react";
@@ -68,6 +68,10 @@ function KnowledgePage() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [activeNote, setActiveNote] = useState<VaultItem | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<string>("");
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [formError, setFormError] = useState("");
+  const [deleteError, setDeleteError] = useState("");
   const [formState, setFormState] = useState<Omit<VaultItem, "id" | "createdAt">>({
     title: "",
     type: "note",
@@ -192,6 +196,7 @@ function KnowledgePage() {
 
   const openNew = () => {
     setActiveNote(null);
+    setFormError("");
     setSelectedFile(null);
     setExistingFiles([]);
     setFormState({
@@ -204,6 +209,7 @@ function KnowledgePage() {
 
   const openEdit = (item: VaultItem) => {
     setActiveNote(item);
+    setFormError("");
     setSelectedFile(null);
     setExistingFiles([]);
     setFormState({
@@ -217,59 +223,79 @@ function KnowledgePage() {
   };
 
   const handleSave = async () => {
+    if (isSaving) return;
     const title = formState.title.trim();
-    if (!title) return;
-
-    if (cloudEnabled) {
-      const saved = await upsertCloudCard("knowledge", {
-        id: activeNote?.id,
-        title,
-        content: formState.type === "note" ? (formState.content ?? "") : "",
-        metadata: {
-          type: formState.type,
-          filename: formState.filename,
-          url: formState.url,
-        },
-      });
-
-      if (saved) {
-        setCloudItems((prev) => {
-          const next = prev.filter((item) => item.id !== saved.id);
-          return [saved, ...next];
-        });
-        if (selectedFile) {
-          await uploadCloudFile("knowledge", saved.id, selectedFile);
-          const files = await listCloudFiles("knowledge", saved.id);
-          setExistingFiles(files);
-        }
-        setDialogOpen(false);
-        setSelectedFile(null);
-        setActiveNote(null);
-      }
+    if (!title) {
+      setFormError("Title is required.");
       return;
     }
 
-    if (activeNote) {
-      updateVaultItem(activeNote.id, { ...formState, title });
-    } else {
-      addVaultItem({ ...formState, title });
+    setIsSaving(true);
+    setFormError("");
+    try {
+      if (cloudEnabled) {
+        const saved = await upsertCloudCard("knowledge", {
+          id: activeNote?.id,
+          title,
+          content: formState.type === "note" ? (formState.content ?? "") : "",
+          metadata: {
+            type: formState.type,
+            filename: formState.filename,
+            url: formState.url,
+          },
+        });
+        if (!saved) {
+          setFormError("Could not save this knowledge item. Please try again.");
+          return;
+        }
+        setCloudItems((prev) => [saved, ...prev.filter((item) => item.id !== saved.id)]);
+        if (selectedFile) {
+          await uploadCloudFile("knowledge", saved.id, selectedFile);
+          setExistingFiles(await listCloudFiles("knowledge", saved.id));
+        }
+      } else if (activeNote) {
+        updateVaultItem(activeNote.id, { ...formState, title });
+      } else {
+        addVaultItem({ ...formState, title });
+      }
+      setDialogOpen(false);
+      setSelectedFile(null);
+      setActiveNote(null);
+    } catch {
+      setFormError("Could not save this knowledge item. Please try again.");
+    } finally {
+      setIsSaving(false);
     }
-    setDialogOpen(false);
   };
 
   const handleDelete = async () => {
-    if (!deleteTarget) return;
-    if (cloudEnabled) {
-      await deleteCloudCard("knowledge", deleteTarget);
-      setCloudItems((prev) => prev.filter((item) => item.id !== deleteTarget));
+    if (!deleteTarget || isDeleting) return;
+    setIsDeleting(true);
+    setDeleteError("");
+    try {
+      if (cloudEnabled) {
+        const deleted = await deleteCloudCard("knowledge", deleteTarget);
+        if (!deleted) {
+          setDeleteError("Could not delete this knowledge item. Please try again.");
+          return;
+        }
+        setCloudItems((prev) => prev.filter((item) => item.id !== deleteTarget));
+      } else {
+        deleteVaultItem(deleteTarget);
+      }
       setDeleteOpen(false);
       setDeleteTarget("");
-      return;
+    } catch {
+      setDeleteError("Could not delete this knowledge item. Please try again.");
+    } finally {
+      setIsDeleting(false);
     }
+  };
 
-    deleteVaultItem(deleteTarget);
-    setDeleteOpen(false);
-    setDeleteTarget("");
+  const requestDelete = (item: ResourceItem) => {
+    setDeleteTarget(item.id);
+    setDeleteError("");
+    setDeleteOpen(true);
   };
 
   const removeAttachment = async (fileId: string) => {
@@ -349,6 +375,11 @@ function KnowledgePage() {
               )}
               onOpen={(item) => navigate({ to: "/knowledge/$id", params: { id: item.id } })}
               onFavorite={handleFavoriteToggle}
+              onEdit={(item) => {
+                const note = visibleVault.find((candidate) => candidate.id === item.id);
+                if (note) openEdit(note);
+              }}
+              onDelete={requestDelete}
             />
           ) : visibleVault.length ? (
             <div className="rounded-3xl border border-border p-6 text-sm text-ink-soft text-center">
@@ -375,59 +406,75 @@ function KnowledgePage() {
         <DialogContent className="w-[calc(100vw-24px)] max-w-2xl overflow-hidden p-0 sm:rounded-[24px]">
           <div className="flex max-h-[calc(100vh-24px)] flex-col">
             <DialogHeader className="px-4 py-4 sm:px-6">
-              <DialogTitle>{activeNote ? "Edit Note" : "Add Note"}</DialogTitle>
+              <DialogTitle>{activeNote ? "Edit Knowledge" : "Add Knowledge"}</DialogTitle>
+              <p className="text-sm text-ink-soft">
+                Keep useful notes and references easy to find and revisit.
+              </p>
             </DialogHeader>
             <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-6">
               <div className="grid gap-4">
-                <Input
-                  value={formState.title}
-                  onChange={(event) =>
-                    setFormState((prev) => ({ ...prev, title: event.target.value }))
-                  }
-                  placeholder="Title"
-                />
-                <select
-                  value={formState.type}
-                  onChange={(event) =>
-                    setFormState((prev) => ({
-                      ...prev,
-                      type: event.target.value as "note" | "file",
-                    }))
-                  }
-                  className="rounded-[10px] border border-border bg-background px-3 py-2 text-sm text-ink outline-none focus:ring-2 focus:ring-primary/30"
-                >
-                  <option value="note">Note</option>
-                  <option value="file">File</option>
-                </select>
-                {formState.type === "note" ? (
-                  <Textarea
-                    value={formState.content || ""}
+                <KnowledgeField label="Title" required>
+                  <Input
+                    value={formState.title}
                     onChange={(event) =>
-                      setFormState((prev) => ({ ...prev, content: event.target.value }))
+                      setFormState((prev) => ({ ...prev, title: event.target.value }))
                     }
-                    placeholder="Content"
+                    placeholder="Enter a title"
                   />
+                </KnowledgeField>
+                <KnowledgeField label="Type" required>
+                  <select
+                    value={formState.type}
+                    onChange={(event) =>
+                      setFormState((prev) => ({
+                        ...prev,
+                        type: event.target.value as "note" | "file",
+                      }))
+                    }
+                    className="h-10 rounded-[10px] border border-border bg-background px-3 py-2 text-sm text-ink outline-none focus:ring-2 focus:ring-primary/30"
+                  >
+                    <option value="note">Note</option>
+                    <option value="file">File</option>
+                  </select>
+                </KnowledgeField>
+                {formState.type === "note" ? (
+                  <KnowledgeField label="Description / Note" optional>
+                    <Textarea
+                      value={formState.content || ""}
+                      onChange={(event) =>
+                        setFormState((prev) => ({ ...prev, content: event.target.value }))
+                      }
+                      placeholder="Add a short note"
+                    />
+                  </KnowledgeField>
                 ) : (
                   <>
-                    <Input
-                      value={formState.filename || ""}
-                      onChange={(event) =>
-                        setFormState((prev) => ({ ...prev, filename: event.target.value }))
-                      }
-                      placeholder="Filename"
-                    />
-                    <Input
-                      value={formState.url || ""}
-                      onChange={(event) =>
-                        setFormState((prev) => ({ ...prev, url: event.target.value }))
-                      }
-                      placeholder="File URL or path"
-                    />
+                    <KnowledgeField label="Filename" optional>
+                      <Input
+                        value={formState.filename || ""}
+                        onChange={(event) =>
+                          setFormState((prev) => ({ ...prev, filename: event.target.value }))
+                        }
+                        placeholder="Enter filename"
+                      />
+                    </KnowledgeField>
+                    <KnowledgeField label="URL" optional>
+                      <Input
+                        value={formState.url || ""}
+                        onChange={(event) =>
+                          setFormState((prev) => ({ ...prev, url: event.target.value }))
+                        }
+                        placeholder="https://..."
+                      />
+                    </KnowledgeField>
                   </>
                 )}
+                {formError ? <p className="text-sm text-destructive">{formError}</p> : null}
                 {cloudEnabled ? (
                   <div className="space-y-2 rounded-[12px] border border-border/70 bg-muted/30 p-3">
-                    <label className="text-[12px] font-medium text-ink-soft">Attach a file</label>
+                    <label className="text-[12px] font-medium text-ink-soft">
+                      Attachment <span className="font-normal">(Optional)</span>
+                    </label>
                     <input
                       type="file"
                       onChange={(event) => setSelectedFile(event.target.files?.[0] ?? null)}
@@ -467,9 +514,10 @@ function KnowledgePage() {
               <button
                 type="button"
                 onClick={handleSave}
-                className="h-9 rounded-[10px] bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+                disabled={isSaving}
+                className="h-9 rounded-[10px] bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                Save
+                {isSaving ? "Saving..." : activeNote ? "Save Changes" : "Add Knowledge"}
               </button>
             </DialogFooter>
           </div>
@@ -479,17 +527,40 @@ function KnowledgePage() {
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete note</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete this note?
-            </AlertDialogDescription>
+            <AlertDialogTitle>Delete this item?</AlertDialogTitle>
+            <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
+            {deleteError ? <p className="text-sm text-destructive">{deleteError}</p> : null}
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setDeleteOpen(false)}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+            <AlertDialogAction onClick={handleDelete} disabled={isDeleting}>
+              {isDeleting ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </AppShell>
+  );
+}
+
+function KnowledgeField({
+  label,
+  required,
+  optional,
+  children,
+}: {
+  label: string;
+  required?: boolean;
+  optional?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <label className="grid gap-1.5 text-[12px] font-medium text-ink-soft">
+      <span>
+        {label} {required ? <span className="text-destructive">*</span> : null}
+        {optional ? <span className="font-normal"> (Optional)</span> : null}
+      </span>
+      {children}
+    </label>
   );
 }
