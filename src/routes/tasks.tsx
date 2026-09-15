@@ -12,6 +12,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { DateControl } from "@/components/form-controls";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -223,7 +224,7 @@ function TasksPage() {
                 <div className="space-y-4">
                   <div>
                     <label className="text-[12px] font-medium text-ink-soft">Task Title</label>
-                    <Input
+                    <DateControl
                       className="mt-2"
                       value={taskForm.title}
                       placeholder="Task title"
@@ -284,7 +285,7 @@ function TasksPage() {
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
                     <label className="text-[12px] font-medium text-ink-soft">Due Date</label>
-                    <Input
+                    <DateControl
                       className="mt-2"
                       type="date"
                       value={taskForm.dueDate}

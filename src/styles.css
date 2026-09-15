@@ -106,8 +106,8 @@
   --destructive-foreground: #ffffff;
 
   --border: #e2e5ea;
-  --input: #e2e5ea;
-  --ring: #4f46e5;
+  --input: #d9dee7;
+  --ring: #4263eb;
 
   --chart-1: #4263eb;
   --chart-2: #7657d9;
@@ -210,6 +210,79 @@
   h4 {
     font-family: var(--font-display);
     letter-spacing: -0.02em;
+  }
+
+  input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="range"]),
+  textarea,
+  select {
+    min-height: 44px !important;
+    border-radius: 8px !important;
+    border: 1px solid #d9dee7 !important;
+    background-color: #ffffff !important;
+    color: #10233f !important;
+    box-shadow: none !important;
+    font-weight: 400;
+  }
+
+  input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="range"]),
+  select {
+    height: 44px !important;
+  }
+
+  input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="range"])::placeholder,
+  textarea::placeholder {
+    color: #8a96a8 !important;
+    font-weight: 400 !important;
+  }
+
+  input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="range"]):hover,
+  textarea:hover,
+  select:hover {
+    border-color: #c7ceda !important;
+  }
+
+  input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="range"]):focus,
+  textarea:focus,
+  select:focus {
+    border-color: #4263eb !important;
+    outline: none !important;
+    box-shadow: none !important;
+  }
+
+  input:disabled,
+  textarea:disabled,
+  select:disabled {
+    border-color: #e9ecf1 !important;
+    background-color: #f5f6f8 !important;
+    color: #8a96a8 !important;
+    opacity: 1 !important;
+  }
+
+  input[type="date"] {
+    padding-right: 40px !important;
+  }
+
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    opacity: 0;
+  }
+
+  button {
+    box-shadow: none !important;
+  }
+
+  label:not(.cursor-pointer) {
+    color: #344766;
+    font-size: 13px;
+    font-weight: 500;
+  }
+
+  .quick-add-label {
+    display: block;
+    margin-bottom: 8px;
+    color: #344766;
+    font-size: 13px;
+    font-weight: 500;
   }
 }
 

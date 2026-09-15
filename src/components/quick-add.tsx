@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { DateControl, SelectControl } from "@/components/form-controls";
 import {
   useTaskStore,
   useLearningStore,
@@ -280,11 +281,11 @@ export function QuickAddDialog({
                 <div className="space-y-6">
                   <div className="space-y-4">
                     <div>
-                      <label className="text-[12px] font-medium text-ink-soft">Title</label>
+                      <label className="quick-add-label">Task title</label>
                       <Input
                         className="mt-2"
                         value={values.task.title}
-                        placeholder="Title"
+                        placeholder="Enter task title"
                         onChange={(event) =>
                           setValues((current) => ({
                             ...current,
@@ -294,10 +295,10 @@ export function QuickAddDialog({
                       />
                     </div>
                     <div>
-                      <label className="text-[12px] font-medium text-ink-soft">Description</label>
+                      <label className="quick-add-label">Description</label>
                       <Textarea
                         className="mt-2 min-h-[96px]"
-                        placeholder="Short description"
+                        placeholder="Add a description..."
                         value={values.task.description}
                         onChange={(event) =>
                           setValues((current) => ({
@@ -311,11 +312,11 @@ export function QuickAddDialog({
 
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div>
-                      <label className="text-[12px] font-medium text-ink-soft">Category</label>
+                      <label className="quick-add-label">Category</label>
                       <Input
                         className="mt-2"
                         value={values.task.category}
-                        placeholder="Category"
+                        placeholder="Enter category"
                         onChange={(event) =>
                           setValues((current) => ({
                             ...current,
@@ -325,11 +326,10 @@ export function QuickAddDialog({
                       />
                     </div>
                     <div>
-                      <label className="text-[12px] font-medium text-ink-soft">Date</label>
-                      <Input
+                      <label className="quick-add-label">Due date</label>
+                      <DateControl
                         className="mt-2"
                         value={values.task.dueDate}
-                        type="date"
                         onChange={(event) =>
                           setValues((current) => ({
                             ...current,
@@ -342,7 +342,7 @@ export function QuickAddDialog({
 
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div>
-                      <label className="text-[12px] font-medium text-ink-soft">Priority</label>
+                      <label className="quick-add-label">Priority</label>
                       <Select
                         value={values.task.priority}
                         onValueChange={(value) =>
@@ -364,7 +364,7 @@ export function QuickAddDialog({
                       </Select>
                     </div>
                     <div>
-                      <label className="text-[12px] font-medium text-ink-soft">Status</label>
+                      <label className="quick-add-label">Status</label>
                       <Select
                         value={values.task.status}
                         onValueChange={(value) =>
@@ -389,7 +389,7 @@ export function QuickAddDialog({
                   </div>
 
                   <div>
-                    <label className="text-[12px] font-medium text-ink-soft">Notes</label>
+                    <label className="quick-add-label">Notes</label>
                     <Textarea
                       className="mt-2 min-h-[120px]"
                       placeholder="Notes"
@@ -406,7 +406,8 @@ export function QuickAddDialog({
               </TabsContent>
 
               <TabsContent value="Learning">
-                <div className="grid gap-3">
+                <div className="grid gap-4">
+                  <label className="quick-add-label">Topic</label>
                   <Input
                     value={values.learning.topic}
                     placeholder="Topic"
@@ -417,6 +418,7 @@ export function QuickAddDialog({
                       }))
                     }
                   />
+                  <label className="quick-add-label">Category</label>
                   <Input
                     value={values.learning.category}
                     placeholder="Category"
@@ -427,6 +429,7 @@ export function QuickAddDialog({
                       }))
                     }
                   />
+                  <label className="quick-add-label">Source</label>
                   <Input
                     value={values.learning.source}
                     placeholder="Source"
@@ -437,8 +440,8 @@ export function QuickAddDialog({
                       }))
                     }
                   />
-                  <div className="grid grid-cols-2 gap-3">
-                    <Input
+                  <div className="grid grid-cols-2 gap-4">
+                    <div><label className="quick-add-label">Learning time</label><Input
                       value={values.learning.timeHours}
                       placeholder="Time (hours)"
                       type="number"
@@ -448,8 +451,7 @@ export function QuickAddDialog({
                           learning: { ...current.learning, timeHours: event.target.value },
                         }))
                       }
-                    />
-                    <Input
+                    /></div><div><label className="quick-add-label">Confidence</label><Input
                       value={String(values.learning.confidence)}
                       placeholder="Confidence"
                       type="number"
@@ -461,12 +463,12 @@ export function QuickAddDialog({
                           learning: { ...current.learning, confidence: Number(event.target.value) },
                         }))
                       }
-                    />
+                    /></div>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <Input
+                  <div className="grid grid-cols-2 gap-4">
+                    <div><label className="quick-add-label">Date</label>
+                    <DateControl
                       value={values.learning.date}
-                      type="date"
                       onChange={(event) =>
                         setValues((current) => ({
                           ...current,
@@ -474,9 +476,9 @@ export function QuickAddDialog({
                         }))
                       }
                     />
-                    <div />
+                    </div><div />
                   </div>
-                  <textarea
+                  <label className="quick-add-label">Notes</label><textarea
                     className="min-h-[120px] rounded-md border border-input bg-transparent px-3 py-2 text-sm text-foreground outline-none focus-visible:ring-1 focus-visible:ring-ring"
                     placeholder="Notes"
                     value={values.learning.notes}
@@ -491,7 +493,8 @@ export function QuickAddDialog({
               </TabsContent>
 
               <TabsContent value="Application">
-                <div className="grid gap-3">
+                <div className="grid gap-4">
+                  <label className="quick-add-label">Company</label>
                   <Input
                     value={values.application.company}
                     placeholder="Company"
@@ -502,7 +505,7 @@ export function QuickAddDialog({
                       }))
                     }
                   />
-                  <Input
+                  <label className="quick-add-label">Position</label><Input
                     value={values.application.position}
                     placeholder="Position"
                     onChange={(event) =>
@@ -512,7 +515,7 @@ export function QuickAddDialog({
                       }))
                     }
                   />
-                  <Input
+                  <label className="quick-add-label">Country</label><Input
                     value={values.application.country}
                     placeholder="Country"
                     onChange={(event) =>
@@ -522,10 +525,10 @@ export function QuickAddDialog({
                       }))
                     }
                   />
-                  <div className="grid grid-cols-2 gap-3">
-                    <Input
+                  <div className="grid grid-cols-2 gap-4">
+                    <div><label className="quick-add-label">Applied date</label>
+                    <DateControl
                       value={values.application.appliedDate}
-                      type="date"
                       onChange={(event) =>
                         setValues((current) => ({
                           ...current,
@@ -533,7 +536,7 @@ export function QuickAddDialog({
                         }))
                       }
                     />
-                    <Input
+                    </div><div><label className="quick-add-label">Status</label><Input
                       value={values.application.status}
                       placeholder="Status"
                       onChange={(event) =>
@@ -547,7 +550,8 @@ export function QuickAddDialog({
                       }
                     />
                   </div>
-                  <Input
+                  </div>
+                  <label className="quick-add-label">Salary</label><Input
                     value={values.application.salary}
                     placeholder="Salary"
                     onChange={(event) =>
@@ -557,7 +561,7 @@ export function QuickAddDialog({
                       }))
                     }
                   />
-                  <Input
+                  <label className="quick-add-label">Interview stage</label><Input
                     value={values.application.interviewStage}
                     placeholder="Interview Stage"
                     onChange={(event) =>
@@ -567,7 +571,7 @@ export function QuickAddDialog({
                       }))
                     }
                   />
-                  <select
+                  <div><label className="quick-add-label">Portfolio sent</label><SelectControl
                     value={values.application.portfolioSent ? "Yes" : "No"}
                     onChange={(event) =>
                       setValues((current) => ({
@@ -582,8 +586,8 @@ export function QuickAddDialog({
                   >
                     <option value="No">Portfolio Sent: No</option>
                     <option value="Yes">Portfolio Sent: Yes</option>
-                  </select>
-                  <textarea
+                  </SelectControl></div>
+                  <label className="quick-add-label">Notes</label><textarea
                     className="min-h-[120px] rounded-md border border-input bg-transparent px-3 py-2 text-sm text-foreground outline-none focus-visible:ring-1 focus-visible:ring-ring"
                     placeholder="Notes"
                     value={values.application.notes}
@@ -598,118 +602,35 @@ export function QuickAddDialog({
               </TabsContent>
 
               <TabsContent value="Reading">
-                <div className="grid gap-3">
-                  <Input
-                    value={values.reading.book}
-                    placeholder="Book"
-                    onChange={(event) =>
-                      setValues((current) => ({
-                        ...current,
-                        reading: { ...current.reading, book: event.target.value },
-                      }))
-                    }
-                  />
-                  <div className="grid grid-cols-2 gap-3">
-                    <Input
-                      value={values.reading.pages}
-                      placeholder="Pages"
-                      type="number"
-                      onChange={(event) =>
-                        setValues((current) => ({
-                          ...current,
-                          reading: { ...current.reading, pages: event.target.value },
-                        }))
-                      }
-                    />
-                    <Input
-                      value={values.reading.timeMinutes}
-                      placeholder="Time (minutes)"
-                      type="number"
-                      onChange={(event) =>
-                        setValues((current) => ({
-                          ...current,
-                          reading: { ...current.reading, timeMinutes: event.target.value },
-                        }))
-                      }
-                    />
+                <div className="grid gap-4">
+                  <label className="quick-add-label">Book</label>
+                  <Input value={values.reading.book} placeholder="Book" onChange={(event) => setValues((current) => ({ ...current, reading: { ...current.reading, book: event.target.value } }))} />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div><label className="quick-add-label">Pages</label><Input value={values.reading.pages} placeholder="Pages" type="number" onChange={(event) => setValues((current) => ({ ...current, reading: { ...current.reading, pages: event.target.value } }))} /></div>
+                    <div><label className="quick-add-label">Reading time</label><Input value={values.reading.timeMinutes} placeholder="Time (minutes)" type="number" onChange={(event) => setValues((current) => ({ ...current, reading: { ...current.reading, timeMinutes: event.target.value } }))} /></div>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <Input
-                      value={values.reading.progress}
-                      placeholder="Progress (%)"
-                      type="number"
-                      onChange={(event) =>
-                        setValues((current) => ({
-                          ...current,
-                          reading: { ...current.reading, progress: event.target.value },
-                        }))
-                      }
-                    />
-                    <Input
-                      value={values.reading.date}
-                      type="date"
-                      onChange={(event) =>
-                        setValues((current) => ({
-                          ...current,
-                          reading: { ...current.reading, date: event.target.value },
-                        }))
-                      }
-                    />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div><label className="quick-add-label">Progress</label><Input value={values.reading.progress} placeholder="Progress (%)" type="number" onChange={(event) => setValues((current) => ({ ...current, reading: { ...current.reading, progress: event.target.value } }))} /></div>
+                    <div><label className="quick-add-label">Date</label><DateControl value={values.reading.date} onChange={(event) => setValues((current) => ({ ...current, reading: { ...current.reading, date: event.target.value } }))} /></div>
                   </div>
                 </div>
               </TabsContent>
 
               <TabsContent value="Exercise">
-                <div className="grid gap-3">
-                  <Input
-                    value={values.exercise.exercise}
-                    placeholder="Exercise"
-                    onChange={(event) =>
-                      setValues((current) => ({
-                        ...current,
-                        exercise: { ...current.exercise, exercise: event.target.value },
-                      }))
-                    }
-                  />
-                  <div className="grid grid-cols-2 gap-3">
-                    <Input
-                      value={values.exercise.durationMinutes}
-                      placeholder="Duration (minutes)"
-                      type="number"
-                      onChange={(event) =>
-                        setValues((current) => ({
-                          ...current,
-                          exercise: { ...current.exercise, durationMinutes: event.target.value },
-                        }))
-                      }
-                    />
-                    <Input
-                      value={values.exercise.calories}
-                      placeholder="Calories"
-                      type="number"
-                      onChange={(event) =>
-                        setValues((current) => ({
-                          ...current,
-                          exercise: { ...current.exercise, calories: event.target.value },
-                        }))
-                      }
-                    />
+                <div className="grid gap-4">
+                  <label className="quick-add-label">Exercise</label>
+                  <Input value={values.exercise.exercise} placeholder="Exercise" onChange={(event) => setValues((current) => ({ ...current, exercise: { ...current.exercise, exercise: event.target.value } }))} />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div><label className="quick-add-label">Duration</label><Input value={values.exercise.durationMinutes} placeholder="Duration (minutes)" type="number" onChange={(event) => setValues((current) => ({ ...current, exercise: { ...current.exercise, durationMinutes: event.target.value } }))} /></div>
+                    <div><label className="quick-add-label">Calories</label><Input value={values.exercise.calories} placeholder="Calories" type="number" onChange={(event) => setValues((current) => ({ ...current, exercise: { ...current.exercise, calories: event.target.value } }))} /></div>
                   </div>
-                  <Input
-                    value={values.exercise.date}
-                    type="date"
-                    onChange={(event) =>
-                      setValues((current) => ({
-                        ...current,
-                        exercise: { ...current.exercise, date: event.target.value },
-                      }))
-                    }
-                  />
+                  <div><label className="quick-add-label">Date</label><DateControl value={values.exercise.date} onChange={(event) => setValues((current) => ({ ...current, exercise: { ...current.exercise, date: event.target.value } }))} /></div>
                 </div>
               </TabsContent>
 
               <TabsContent value="Goal">
-                <div className="grid gap-3">
+                <div className="grid gap-4">
+                  <label className="quick-add-label">Goal</label>
                   <Input
                     value={values.goal.title}
                     placeholder="Goal"
@@ -720,7 +641,7 @@ export function QuickAddDialog({
                       }))
                     }
                   />
-                  <Input
+                  <label className="quick-add-label">Category</label><Input
                     value={values.goal.category}
                     placeholder="Category"
                     onChange={(event) =>
@@ -730,7 +651,7 @@ export function QuickAddDialog({
                       }))
                     }
                   />
-                  <select
+                  <label className="quick-add-label">Goal type</label><SelectControl
                     value={values.goal.type}
                     onChange={(event) =>
                       setValues((current) => ({
@@ -745,31 +666,28 @@ export function QuickAddDialog({
                     <option value="Monthly">Monthly</option>
                     <option value="Quarterly">Quarterly</option>
                     <option value="Yearly">Yearly</option>
-                  </select>
-                  <div className="grid grid-cols-2 gap-3">
-                    <Input
+                  </SelectControl>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div><label className="quick-add-label">Start date</label><DateControl
                       value={values.goal.startDate}
-                      type="date"
                       onChange={(event) =>
                         setValues((current) => ({
                           ...current,
                           goal: { ...current.goal, startDate: event.target.value },
                         }))
                       }
-                    />
-                    <Input
+                    /></div><div><label className="quick-add-label">End date</label><DateControl
                       value={values.goal.endDate}
-                      type="date"
                       onChange={(event) =>
                         setValues((current) => ({
                           ...current,
                           goal: { ...current.goal, endDate: event.target.value },
                         }))
                       }
-                    />
+                    /></div>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <Input
+                  <div className="grid grid-cols-2 gap-4">
+                    <div><label className="quick-add-label">Target</label><Input
                       value={String(values.goal.targetValue || 0)}
                       placeholder="Target"
                       type="number"
@@ -779,8 +697,7 @@ export function QuickAddDialog({
                           goal: { ...current.goal, targetValue: Number(event.target.value) },
                         }))
                       }
-                    />
-                    <Input
+                    /></div><div><label className="quick-add-label">Current</label><Input
                       value={String(values.goal.currentValue || 0)}
                       placeholder="Current"
                       type="number"
@@ -790,9 +707,9 @@ export function QuickAddDialog({
                           goal: { ...current.goal, currentValue: Number(event.target.value) },
                         }))
                       }
-                    />
+                    /></div>
                   </div>
-                  <Input
+                  <label className="quick-add-label">Status</label><Input
                     value={values.goal.status}
                     placeholder="Status"
                     onChange={(event) =>
@@ -802,7 +719,7 @@ export function QuickAddDialog({
                       }))
                     }
                   />
-                  <textarea
+                  <label className="quick-add-label">Notes</label><textarea
                     className="min-h-[80px] rounded-md border border-input bg-transparent px-3 py-2 text-sm text-foreground outline-none focus-visible:ring-1 focus-visible:ring-ring"
                     placeholder="Notes"
                     value={values.goal.notes}
@@ -817,7 +734,8 @@ export function QuickAddDialog({
               </TabsContent>
 
               <TabsContent value="Focus">
-                <div className="grid gap-3">
+                <div className="grid gap-4">
+                  <label className="quick-add-label">Title</label>
                   <Input
                     value={values.focus.title}
                     placeholder="Title"
@@ -828,7 +746,7 @@ export function QuickAddDialog({
                       }))
                     }
                   />
-                  <Input
+                  <label className="quick-add-label">Category</label><Input
                     value={values.focus.category}
                     placeholder="Category"
                     onChange={(event) =>
@@ -838,8 +756,8 @@ export function QuickAddDialog({
                       }))
                     }
                   />
-                  <div className="grid grid-cols-2 gap-3">
-                    <Input
+                  <div className="grid grid-cols-2 gap-4">
+                    <div><label className="quick-add-label">Start time</label><Input
                       value={values.focus.startTime}
                       type="time"
                       onChange={(event) =>
@@ -848,8 +766,7 @@ export function QuickAddDialog({
                           focus: { ...current.focus, startTime: event.target.value },
                         }))
                       }
-                    />
-                    <Input
+                    /></div><div><label className="quick-add-label">End time</label><Input
                       value={values.focus.endTime}
                       type="time"
                       onChange={(event) =>
@@ -858,9 +775,9 @@ export function QuickAddDialog({
                           focus: { ...current.focus, endTime: event.target.value },
                         }))
                       }
-                    />
+                    /></div>
                   </div>
-                  <Input
+                  <label className="quick-add-label">Priority</label><Input
                     value={values.focus.priority}
                     placeholder="Priority"
                     onChange={(event) =>
@@ -873,7 +790,7 @@ export function QuickAddDialog({
                       }))
                     }
                   />
-                  <Input
+                  <label className="quick-add-label">Status</label><Input
                     value={values.focus.status}
                     placeholder="Status"
                     onChange={(event) =>
@@ -886,7 +803,7 @@ export function QuickAddDialog({
                       }))
                     }
                   />
-                  <textarea
+                  <label className="quick-add-label">Description</label><textarea
                     className="min-h-[120px] rounded-md border border-input bg-transparent px-3 py-2 text-sm text-foreground outline-none focus-visible:ring-1 focus-visible:ring-ring"
                     placeholder="Description"
                     value={values.focus.description}
@@ -901,7 +818,8 @@ export function QuickAddDialog({
               </TabsContent>
 
               <TabsContent value="Interview">
-                <div className="grid gap-3">
+                <div className="grid gap-4">
+                  <label className="quick-add-label">Topic or question</label>
                   <Input
                     value={values.interview.title}
                     placeholder="Topic or Question"
@@ -912,7 +830,7 @@ export function QuickAddDialog({
                       }))
                     }
                   />
-                  <select
+                  <label className="quick-add-label">Type</label><SelectControl
                     value={values.interview.type}
                     onChange={(event) =>
                       setValues((current) => ({
@@ -927,8 +845,8 @@ export function QuickAddDialog({
                   >
                     <option value="note">Note</option>
                     <option value="file">Resource</option>
-                  </select>
-                  <textarea
+                  </SelectControl>
+                  <label className="quick-add-label">Answer or notes</label><textarea
                     className="min-h-[120px] rounded-md border border-input bg-transparent px-3 py-2 text-sm text-foreground outline-none focus-visible:ring-1 focus-visible:ring-ring"
                     placeholder="Answer or Notes"
                     value={values.interview.content}
@@ -943,7 +861,8 @@ export function QuickAddDialog({
               </TabsContent>
 
               <TabsContent value="Vault">
-                <div className="grid gap-3">
+                <div className="grid gap-4">
+                  <label className="quick-add-label">Title</label>
                   <Input
                     value={values.vault.title}
                     placeholder="Title"
@@ -954,7 +873,7 @@ export function QuickAddDialog({
                       }))
                     }
                   />
-                  <select
+                  <label className="quick-add-label">Type</label><SelectControl
                     value={values.vault.type}
                     onChange={(event) =>
                       setValues((current) => ({
@@ -966,8 +885,8 @@ export function QuickAddDialog({
                   >
                     <option value="note">Note</option>
                     <option value="file">File</option>
-                  </select>
-                  <textarea
+                  </SelectControl>
+                  <label className="quick-add-label">Content</label><textarea
                     className="min-h-[120px] rounded-md border border-input bg-transparent px-3 py-2 text-sm text-foreground outline-none focus-visible:ring-1 focus-visible:ring-ring"
                     placeholder="Content"
                     value={values.vault.content}
@@ -982,7 +901,8 @@ export function QuickAddDialog({
               </TabsContent>
 
               <TabsContent value="Project">
-                <div className="grid gap-3">
+                <div className="grid gap-4">
+                  <label className="quick-add-label">Project title</label>
                   <Input
                     value={values.project.title}
                     placeholder="Project Title"
@@ -993,7 +913,7 @@ export function QuickAddDialog({
                       }))
                     }
                   />
-                  <textarea
+                  <label className="quick-add-label">Description</label><textarea
                     className="min-h-[80px] rounded-md border border-input bg-transparent px-3 py-2 text-sm text-foreground outline-none focus-visible:ring-1 focus-visible:ring-ring"
                     placeholder="Description"
                     value={values.project.description}
@@ -1004,7 +924,7 @@ export function QuickAddDialog({
                       }))
                     }
                   />
-                  <select
+                  <label className="quick-add-label">Status</label><SelectControl
                     value={values.project.status}
                     onChange={(event) =>
                       setValues((current) => ({
@@ -1018,7 +938,7 @@ export function QuickAddDialog({
                     <option value="Active">Active</option>
                     <option value="Review">Review</option>
                     <option value="Completed">Completed</option>
-                  </select>
+                  </SelectControl>
                 </div>
               </TabsContent>
             </Tabs>

@@ -3,6 +3,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { Plus, Search, Trash2 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { SelectControl } from "@/components/form-controls";
 import {
   Dialog,
   DialogContent,
@@ -388,7 +389,7 @@ function InterviewPrepPage() {
                   }
                   placeholder="Topic or Question"
                 />
-                <select
+                <SelectControl
                   value={formState.type}
                   onChange={(event) =>
                     setFormState((prev) => ({
@@ -396,11 +397,10 @@ function InterviewPrepPage() {
                       type: event.target.value as "note" | "file",
                     }))
                   }
-                  className="rounded-[10px] border border-border bg-background px-3 py-2 text-sm text-ink outline-none focus:ring-2 focus:ring-primary/30"
                 >
                   <option value="note">Note</option>
                   <option value="file">Resource</option>
-                </select>
+                </SelectControl>
                 {formState.type === "note" ? (
                   <Textarea
                     value={formState.content || ""}

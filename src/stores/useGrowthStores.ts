@@ -101,6 +101,32 @@ export interface ExerciseEntry {
   date: string;
 }
 
+export type FreelanceStatus =
+  | "Lead"
+  | "Contacted"
+  | "Proposal Sent"
+  | "Active"
+  | "Waiting"
+  | "Completed"
+  | "Paid"
+  | "Lost";
+
+export interface FreelanceItem {
+  id: string;
+  client: string;
+  project: string;
+  description?: string;
+  category?: string;
+  status: FreelanceStatus;
+  startDate?: string;
+  deadline?: string;
+  amount?: number;
+  paymentStatus?: "Pending" | "Paid" | "Not applicable";
+  nextAction?: string;
+  notes?: string;
+  hoursWorked?: number;
+}
+
 export interface FocusItem {
   id: string;
   title: string;
@@ -219,7 +245,15 @@ interface ReadingState {
 interface ExerciseState {
   exercise: ExerciseEntry[];
   addExercise: (entry: Omit<ExerciseEntry, "id">) => void;
+  updateExercise: (id: string, updates: Partial<ExerciseEntry>) => void;
   deleteExercise: (id: string) => void;
+}
+
+interface FreelanceState {
+  freelance: FreelanceItem[];
+  addFreelance: (item: Omit<FreelanceItem, "id">) => void;
+  updateFreelance: (id: string, updates: Partial<FreelanceItem>) => void;
+  deleteFreelance: (id: string) => void;
 }
 
 interface FocusState {
@@ -430,10 +464,35 @@ export const useExerciseStore = create<ExerciseState>()(
       exercise: [],
       addExercise: (entry) =>
         set((state) => ({ exercise: [...state.exercise, { id: createId(), ...entry }] })),
+      updateExercise: (id, updates) =>
+        set((state) => ({
+          exercise: state.exercise.map((entry) =>
+            entry.id === id ? { ...entry, ...updates } : entry,
+          ),
+        })),
       deleteExercise: (id) =>
         set((state) => ({ exercise: state.exercise.filter((entry) => entry.id !== id) })),
     }),
     { name: "growthos_exercise", storage },
+  ),
+);
+
+export const useFreelanceStore = create<FreelanceState>()(
+  persist(
+    (set) => ({
+      freelance: [],
+      addFreelance: (item) =>
+        set((state) => ({ freelance: [...state.freelance, { id: createId(), ...item }] })),
+      updateFreelance: (id, updates) =>
+        set((state) => ({
+          freelance: state.freelance.map((item) =>
+            item.id === id ? { ...item, ...updates } : item,
+          ),
+        })),
+      deleteFreelance: (id) =>
+        set((state) => ({ freelance: state.freelance.filter((item) => item.id !== id) })),
+    }),
+    { name: "growthos_freelance", storage },
   ),
 );
 

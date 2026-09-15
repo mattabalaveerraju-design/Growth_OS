@@ -4,6 +4,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { Plus, Trash, GripVertical, CheckCircle2, Circle, ArrowUpRight } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { SelectControl } from "@/components/form-controls";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -197,9 +198,9 @@ function FocusPage() {
 
                             <div>
                               <label className="text-[12px] font-medium text-ink-soft">Priority</label>
-                              <select value={form.priority} onChange={(e) => setForm((f) => ({ ...f, priority: e.target.value }))} className="mt-2 rounded-[10px] border border-border bg-white px-3 py-2 text-sm text-ink outline-none focus:ring-2 focus:ring-primary/30 w-full">
+                              <SelectControl value={form.priority} onChange={(e) => setForm((f) => ({ ...f, priority: e.target.value }))} className="mt-2">
                                 {priorities.map((p) => (<option key={p} value={p}>{p}</option>))}
-                              </select>
+                              </SelectControl>
                             </div>
                           </div>
 

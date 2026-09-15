@@ -3,6 +3,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { Plus, Search, Trash2 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { SelectControl } from "@/components/form-controls";
 import {
   Dialog,
   DialogContent,
@@ -423,7 +424,7 @@ function KnowledgePage() {
                   />
                 </KnowledgeField>
                 <KnowledgeField label="Type" required>
-                  <select
+                  <SelectControl
                     value={formState.type}
                     onChange={(event) =>
                       setFormState((prev) => ({
@@ -431,11 +432,10 @@ function KnowledgePage() {
                         type: event.target.value as "note" | "file",
                       }))
                     }
-                    className="h-10 rounded-[10px] border border-border bg-background px-3 py-2 text-sm text-ink outline-none focus:ring-2 focus:ring-primary/30"
                   >
                     <option value="note">Note</option>
                     <option value="file">File</option>
-                  </select>
+                  </SelectControl>
                 </KnowledgeField>
                 {formState.type === "note" ? (
                   <KnowledgeField label="Description / Note" optional>

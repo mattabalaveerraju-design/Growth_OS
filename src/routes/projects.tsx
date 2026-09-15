@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { Plus, Search, Trash2, Calendar } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { SelectControl } from "@/components/form-controls";
 import {
   Dialog,
   DialogContent,
@@ -263,18 +264,17 @@ function ProjectsPage() {
                   }
                   placeholder="Project description"
                 />
-                <select
+                <SelectControl
                   value={formState.status}
                   onChange={(event) =>
                     setFormState((prev) => ({ ...prev, status: event.target.value }))
                   }
-                  className="rounded-[10px] border border-border bg-background px-3 py-2 text-sm text-ink outline-none focus:ring-2 focus:ring-primary/30"
                 >
                   <option value="Planning">Planning</option>
                   <option value="Active">Active</option>
                   <option value="Review">Review</option>
                   <option value="Completed">Completed</option>
-                </select>
+                </SelectControl>
               </div>
             </div>
             <DialogFooter className="border-t border-border px-4 py-4 sm:px-6">

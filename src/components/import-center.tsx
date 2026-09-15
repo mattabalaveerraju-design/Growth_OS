@@ -13,6 +13,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { SelectControl } from "@/components/form-controls";
 import {
   useApplicationStore,
   useExerciseStore,
@@ -273,7 +274,7 @@ export function ImportCenterDialog({
             <div className="grid gap-4">
               <div className="grid grid-cols-1 gap-3 items-end sm:grid-cols-[220px_1fr]">
                 <label className="block text-sm font-medium text-foreground">Import target</label>
-                <select
+                <SelectControl
                   className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-1 focus-visible:ring-ring"
                   value={module}
                   onChange={(event) => setModule(event.target.value as ModuleName)}
@@ -283,7 +284,7 @@ export function ImportCenterDialog({
                       {item}
                     </option>
                   ))}
-                </select>
+                </SelectControl>
               </div>
 
               <div

@@ -12,6 +12,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { DateControl, SelectControl } from "@/components/form-controls";
 import {
   Dialog,
   DialogContent,
@@ -567,19 +568,18 @@ function LearningPage() {
                 </FormField>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <FormField label="Category" required>
-                    <select
+                    <SelectControl
                       value={formState.category}
                       onChange={(event) =>
                         setFormState((prev) => ({ ...prev, category: event.target.value }))
                       }
-                      className="h-10 rounded-[10px] border border-border bg-background px-3 py-2 text-sm text-ink outline-none focus:ring-2 focus:ring-primary/30"
                     >
                       {categories.map((category) => (
                         <option key={category} value={category}>
                           {category}
                         </option>
                       ))}
-                    </select>
+                    </SelectControl>
                   </FormField>
                   <FormField label="Learning time" optional>
                     <Input
@@ -608,8 +608,7 @@ function LearningPage() {
                     />
                   </FormField>
                   <FormField label="Date" required>
-                    <Input
-                      type="date"
+                    <DateControl
                       value={formState.date}
                       onChange={(event) =>
                         setFormState((prev) => ({ ...prev, date: event.target.value }))

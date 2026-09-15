@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { Plus, Trash2 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { DateControl, SelectControl } from "@/components/form-controls";
 import {
   Dialog,
   DialogContent,
@@ -242,19 +243,18 @@ function GoalsPage() {
                   placeholder="Description"
                 />
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <select
+                  <SelectControl
                     value={formState.type}
                     onChange={(event) =>
                       setFormState((prev) => ({ ...prev, type: event.target.value as GoalType }))
                     }
-                    className="rounded-[10px] border border-border bg-background px-3 py-2 text-sm text-ink outline-none focus:ring-2 focus:ring-primary/30"
                   >
                     <option value="Daily">Daily</option>
                     <option value="Weekly">Weekly</option>
                     <option value="Monthly">Monthly</option>
                     <option value="Quarterly">Quarterly</option>
                     <option value="Yearly">Yearly</option>
-                  </select>
+                  </SelectControl>
                   <Input
                     value={formState.category || ""}
                     onChange={(event) =>
@@ -285,15 +285,13 @@ function GoalsPage() {
                   />
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <Input
-                    type="date"
+                  <DateControl
                     value={formState.startDate}
                     onChange={(event) =>
                       setFormState((prev) => ({ ...prev, startDate: event.target.value }))
                     }
                   />
-                  <Input
-                    type="date"
+                  <DateControl
                     value={formState.endDate}
                     onChange={(event) =>
                       setFormState((prev) => ({ ...prev, endDate: event.target.value }))

@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { Plus, Briefcase, CheckCircle2, MessageSquare, XCircle } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { SelectControl, DateControl } from "@/components/form-controls";
 import {
   Dialog,
   DialogContent,
@@ -225,21 +226,20 @@ function JobsPage() {
                         <td className="px-2 py-3.5 text-ink-soft">{application.position}</td>
                         <td className="px-2 py-3.5">
                           <div className="space-y-1">
-                            <select
+                            <SelectControl
                               value={application.status}
                               onChange={(event) =>
                                 updateApplication(application.id, {
                                   status: event.target.value as ApplicationStatus,
                                 })
                               }
-                              className="h-9 w-full rounded-[10px] border border-border bg-background px-3 py-2 text-[12px] outline-none"
                             >
                               {statuses.map((status) => (
                                 <option key={status} value={status}>
                                   {status}
                                 </option>
                               ))}
-                            </select>
+                            </SelectControl>
                             <span
                               className={`inline-block text-[10.5px] font-medium px-2 py-0.5 rounded-full ${statusStyle[application.status]}`}
                             >
@@ -402,14 +402,13 @@ function JobsPage() {
                   />
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <Input
-                    type="date"
+                  <DateControl
                     value={formState.appliedDate}
                     onChange={(event) =>
                       setFormState((prev) => ({ ...prev, appliedDate: event.target.value }))
                     }
                   />
-                  <select
+                  <SelectControl
                     value={formState.status}
                     onChange={(event) =>
                       setFormState((prev) => ({
@@ -417,14 +416,13 @@ function JobsPage() {
                         status: event.target.value as ApplicationStatus,
                       }))
                     }
-                    className="rounded-[10px] border border-border bg-background px-3 py-2 text-sm text-ink outline-none focus:ring-2 focus:ring-primary/30"
                   >
                     {statuses.map((status) => (
                       <option key={status} value={status}>
                         {status}
                       </option>
                     ))}
-                  </select>
+                  </SelectControl>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <Input
@@ -434,7 +432,7 @@ function JobsPage() {
                     }
                     placeholder="Interview Stage"
                   />
-                  <select
+                  <SelectControl
                     value={formState.portfolioSent ? "Yes" : "No"}
                     onChange={(event) =>
                       setFormState((prev) => ({
@@ -442,11 +440,10 @@ function JobsPage() {
                         portfolioSent: event.target.value === "Yes",
                       }))
                     }
-                    className="rounded-[10px] border border-border bg-background px-3 py-2 text-sm text-ink outline-none focus:ring-2 focus:ring-primary/30"
                   >
                     <option value="No">Portfolio Sent: No</option>
                     <option value="Yes">Portfolio Sent: Yes</option>
-                  </select>
+                  </SelectControl>
                 </div>
                 <Textarea
                   value={formState.notes}
