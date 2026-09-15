@@ -178,39 +178,126 @@ function FocusPage() {
                         </div>
                       </div>
 
-                      {/* Fields row: Category | Time | Priority */}
-                      {isEditing && (
-                        <div className="mt-4">
-                          <div className="grid grid-cols-1 md:grid-cols-[1fr_1.8fr_1fr] gap-4">
-                            <div>
-                              <label className="text-[12px] font-medium text-ink-soft">Category</label>
-                              <Input value={form.category} onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))} className="mt-2" />
-                            </div>
+                      {/* Title */}
+{isEditing && (
+  <div className="mt-4">
+    <label className="text-[12px] font-medium text-ink-soft">
+      Title
+    </label>
 
-                            <div>
-                              <label className="text-[12px] font-medium text-ink-soft">Time</label>
-                              <div className="mt-2 flex items-center gap-2">
-                                <Input type="time" value={form.startTime} onChange={(e) => setForm((f) => ({ ...f, startTime: e.target.value }))} className="w-32" />
-                                <span className="text-ink-soft">—</span>
-                                <Input type="time" value={form.endTime} onChange={(e) => setForm((f) => ({ ...f, endTime: e.target.value }))} className="w-32" />
-                              </div>
-                            </div>
+    <Input
+      value={form.title}
+      onChange={(e) =>
+        setForm((f) => ({
+          ...f,
+          title: e.target.value,
+        }))
+      }
+      placeholder="Enter focus title..."
+      className="mt-2 w-full"
+    />
+  </div>
+)}
 
-                            <div>
-                              <label className="text-[12px] font-medium text-ink-soft">Priority</label>
-                              <SelectControl value={form.priority} onChange={(e) => setForm((f) => ({ ...f, priority: e.target.value }))} className="mt-2">
-                                {priorities.map((p) => (<option key={p} value={p}>{p}</option>))}
-                              </SelectControl>
-                            </div>
-                          </div>
+{/* Fields row: Category | Time | Priority */}
+{isEditing && (
+  <div className="mt-4">
+    <div className="grid grid-cols-1 md:grid-cols-[1fr_1.8fr_1fr] gap-4">
+      
+      <div>
+        <label className="text-[12px] font-medium text-ink-soft">
+          Category
+        </label>
+        <Input
+          value={form.category}
+          onChange={(e) =>
+            setForm((f) => ({
+              ...f,
+              category: e.target.value,
+            }))
+          }
+          className="mt-2"
+        />
+      </div>
 
-                          {/* Description row: full-width */}
-                          <div className="mt-5 w-full">
-                            <label className="mb-2 block text-[12px] font-medium text-ink-soft">Description</label>
-                            <Textarea placeholder="Add a short description..." value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} className="w-full min-h-[100px] resize-y" />
-                          </div>
-                        </div>
-                      )}
+      <div>
+        <label className="text-[12px] font-medium text-ink-soft">
+          Time
+        </label>
+
+        <div className="mt-2 flex items-center gap-2">
+          <Input
+            type="time"
+            value={form.startTime}
+            onChange={(e) =>
+              setForm((f) => ({
+                ...f,
+                startTime: e.target.value,
+              }))
+            }
+            className="w-32"
+          />
+
+          <span className="text-ink-soft">—</span>
+
+          <Input
+            type="time"
+            value={form.endTime}
+            onChange={(e) =>
+              setForm((f) => ({
+                ...f,
+                endTime: e.target.value,
+              }))
+            }
+            className="w-32"
+          />
+        </div>
+      </div>
+
+      <div>
+        <label className="text-[12px] font-medium text-ink-soft">
+          Priority
+        </label>
+
+        <SelectControl
+          value={form.priority}
+          onChange={(e) =>
+            setForm((f) => ({
+              ...f,
+              priority: e.target.value,
+            }))
+          }
+          className="mt-2"
+        >
+          {priorities.map((p) => (
+            <option key={p} value={p}>
+              {p}
+            </option>
+          ))}
+        </SelectControl>
+      </div>
+    </div>
+
+    {/* Description */}
+    <div className="mt-5 w-full">
+      <label className="mb-2 block text-[12px] font-medium text-ink-soft">
+        Description
+      </label>
+
+      <Textarea
+        placeholder="Add a short description..."
+        value={form.description}
+        onChange={(e) =>
+          setForm((f) => ({
+            ...f,
+            description: e.target.value,
+          }))
+        }
+        className="w-full min-h-[100px] resize-y"
+      />
+    </div>
+  </div>
+)}
 
                       {/* Footer: order + move */}
                       <div className="mt-4 border-t border-border pt-3 flex items-center justify-between text-[12px] text-ink-soft">
