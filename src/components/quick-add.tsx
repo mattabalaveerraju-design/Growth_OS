@@ -88,7 +88,7 @@ const defaultState = {
     endTime: "10:00",
     status: "Planned",
     priority: "Medium",
-    notes: "",
+    description: "",
   },
   interview: { title: "", type: "note", content: "" },
   vault: { title: "", type: "note", content: "" },
@@ -211,7 +211,7 @@ export function QuickAddDialog({
         endTime: values.focus.endTime,
         status: values.focus.status as FocusItem["status"],
         priority: values.focus.priority as FocusItem["priority"],
-        notes: values.focus.notes,
+        description: values.focus.description,
       });
       toast.success("Focus item added");
     }
@@ -888,12 +888,12 @@ export function QuickAddDialog({
                   />
                   <textarea
                     className="min-h-[120px] rounded-md border border-input bg-transparent px-3 py-2 text-sm text-foreground outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                    placeholder="Notes"
-                    value={values.focus.notes}
+                    placeholder="Description"
+                    value={values.focus.description}
                     onChange={(event) =>
                       setValues((current) => ({
                         ...current,
-                        focus: { ...current.focus, notes: event.target.value },
+                        focus: { ...current.focus, description: event.target.value },
                       }))
                     }
                   />

@@ -123,9 +123,9 @@ export function AppShell({ children, title }: { children: ReactNode; title?: str
       <QuickAddDialog open={quickOpen} onOpenChange={setQuickOpen} />
       <ImportCenterDialog open={importOpen} onOpenChange={setImportOpen} />
       <ExportCenterDialog open={exportOpen} onOpenChange={setExportOpen} />
-      <div className="flex min-h-screen w-full">
-        {/* Sidebar */}
-        <aside className="hidden lg:flex w-64 shrink-0 flex-col border-r border-border bg-sidebar h-screen overflow-y-auto">
+
+      <div className="hidden lg:block">
+        <aside className="fixed left-0 top-0 z-30 hidden h-screen w-64 shrink-0 flex-col border-r border-border bg-sidebar lg:flex">
           <div className="flex items-center gap-2 px-5 h-16 border-b border-sidebar-border min-w-0">
             <div className="h-8 w-8 rounded-[10px] bg-gradient-to-br from-primary to-violet grid place-items-center text-primary-foreground font-display font-bold text-sm shadow-sm">
               G
@@ -138,7 +138,7 @@ export function AppShell({ children, title }: { children: ReactNode; title?: str
             </div>
           </div>
 
-          <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-6">
+          <nav className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-4 space-y-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {modules.map((group) => (
               <div key={group.group}>
                 <div className="px-3 pb-2 text-[10px] font-semibold tracking-[0.12em] text-ink-soft/70">
@@ -182,7 +182,9 @@ export function AppShell({ children, title }: { children: ReactNode; title?: str
             </div>
           </div>
         </aside>
+      </div>
 
+      <div className="flex min-h-screen w-full lg:pl-64">
         {/* Main */}
         <div className="flex-1 flex flex-col min-w-0">
           <header className="sticky top-0 z-10 flex h-16 items-center gap-2 border-b border-border bg-surface/80 px-4 md:px-6 lg:px-10 backdrop-blur-xl">

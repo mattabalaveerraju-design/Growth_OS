@@ -1,7 +1,8 @@
 "use client";
 
+import React from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import {
   ArrowUpRight,
   Play,
@@ -91,193 +92,50 @@ function Home() {
 
   return (
     <AppShell title="Command Center">
-      <div className="mx-auto w-full max-w-[1240px] px-4 sm:px-6 lg:px-4 space-y-8 lg:space-y-10 overflow-x-hidden">
-        <motion.div {...fadeUp} transition={{ duration: 0.4 }}>
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <h1 className="font-display text-3xl sm:text-4xl lg:text-[34px] font-semibold tracking-[-0.025em] text-ink">
-                Good evening, Balu.
-              </h1>
+      <div className="mx-auto w-full max-w-[1440px] px-8 overflow-x-hidden">
+        {/* Header */}
+        <div className="py-6">
+          <DashboardHeader totalHours={totalHours} />
+        </div>
 
-              <p className="mt-1 text-[15px] text-ink-soft">
-                You have {totalHours.toFixed(1)} growth hours captured in your current workspace.
-              </p>
+        {/* Summary cards (32px below header) */}
+        <div className="mt-8">
+          <SummaryMetrics focusItems={focusItems} applications={applications} learning={learning} />
+        </div>
+
+        {/* Main grid (24px below summary) */}
+        <div className="mt-6">
+          <div className="grid grid-cols-12 gap-5 items-stretch">
+            <main className="col-span-12 lg:col-span-6 flex flex-col gap-6">
+              <CommandTodayFocus />
+            </main>
+
+            <aside className="col-span-12 lg:col-span-3 flex flex-col gap-6">
+              <TodaySchedule focusItems={focusItems} />
+            </aside>
+
+            <aside className="col-span-12 lg:col-span-3 flex flex-col gap-6">
+              <QuickStats learning={learning} applications={applications} reading={reading} />
+            </aside>
+          </div>
+        </div>
+
+        {/* Secondary grid (24px below main) */}
+        <div className="mt-6">
+          <div className="grid grid-cols-12 gap-5 items-stretch">
+            <div className="col-span-12 lg:col-span-6">
+              <LearningProgress />
             </div>
-
-            <div className="text-[13px] text-ink-soft">
-              <HydratedDate
-                value={new Date()}
-                options={{ weekday: "long", month: "long", day: "numeric" }}
-              />
+            <div className="col-span-12 lg:col-span-3">
+              <JobTrackerPreview applications={applications} />
+            </div>
+            <div className="col-span-12 lg:col-span-3">
+              <RecentActivity learning={learning} applications={applications} reading={reading} />
             </div>
           </div>
-        </motion.div>
+        </div>
 
-        <motion.section
-          {...fadeUp}
-          transition={{ duration: 0.5, delay: 0.05 }}
-          className="relative overflow-hidden rounded-[28px] border border-border bg-card shadow-[var(--shadow-hero)]"
-        >
-          <div className="pointer-events-none absolute -top-32 -right-24 h-[420px] w-[420px] rounded-full bg-violet/15 blur-3xl" />
-          <div className="pointer-events-none absolute -bottom-40 -left-20 h-[360px] w-[360px] rounded-full bg-primary/10 blur-3xl" />
-
-          <div className="relative grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-0">
-            <div className="p-5 sm:p-8 lg:p-10">
-              <div className="flex items-center gap-2 text-[11px] font-semibold tracking-[0.16em] text-primary">
-                <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
-                CONTINUE WHERE YOU LEFT OFF
-              </div>
-
-              <h2 className="mt-4 font-display text-3xl sm:text-4xl lg:text-[40px] leading-tight font-semibold tracking-[-0.03em]">
-                GrowthOS dashboard overview
-              </h2>
-              <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-ink-soft">
-                <span className="inline-flex items-center gap-1.5">
-                  <span className="h-1.5 w-1.5 rounded-full bg-success" />
-                  {completedFocus} focus item{completedFocus === 1 ? "" : "s"} completed
-                </span>
-                <span className="text-ink-soft/40">·</span>
-                <span>{applications.length} applications tracked</span>
-                <span className="text-ink-soft/40">·</span>
-                <span>{goals.length} goals active</span>
-              </div>
-
-              <div className="mt-7">
-                <div className="flex items-baseline justify-between">
-                  <span className="text-[12px] font-medium text-ink-soft">Week total hours</span>
-                  <span className="font-display text-[15px] font-semibold tracking-tight">
-                    {totalHours.toFixed(1)}h
-                  </span>
-                </div>
-                <div className="mt-2 h-1.5 w-full rounded-full bg-muted overflow-hidden">
-                  <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${Math.min(100, (totalHours / 40) * 100)}%` }}
-                    transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1], delay: 0.2 }}
-                    className="h-full rounded-full bg-gradient-to-r from-primary to-violet"
-                  />
-                </div>
-              </div>
-
-              <div className="mt-7 rounded-[16px] border border-border bg-surface/60 p-4">
-                <div className="text-[11px] font-semibold tracking-[0.14em] text-ink-soft/80">
-                  NEXT ACTION
-                </div>
-                <div className="mt-1 flex items-start justify-between gap-3">
-                  <div>
-                    <div className="text-[15.5px] font-semibold text-ink">
-                      Plan your next focus session and close the highest-priority item.
-                    </div>
-                    <div className="mt-1 flex items-center gap-3 text-[12.5px] text-ink-soft">
-                      <span className="inline-flex items-center gap-1.5">
-                        <Clock className="h-3.5 w-3.5" /> {totalLearningHours.toFixed(1)}h learning
-                      </span>
-                      <span className="inline-flex items-center gap-1.5">
-                        <Zap className="h-3.5 w-3.5" /> {totalExerciseHours.toFixed(1)}h exercise
-                      </span>
-                      <span className="inline-flex items-center gap-1.5">
-                        <Target className="h-3.5 w-3.5" /> {upcomingTasks.length} due soon
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-6 flex flex-col sm:flex-row gap-3">
-                <button className="group inline-flex items-center gap-2 rounded-[14px] bg-ink text-background px-5 h-12 text-[14.5px] font-medium shadow-[var(--shadow-lifted)] hover:bg-ink/90 transition-all">
-                  <Play className="h-4 w-4 fill-current" />
-                  Continue working
-                  <span className="ml-1 text-[11px] text-background/60 border border-background/20 rounded px-1.5 py-0.5">
-                    ↵
-                  </span>
-                </button>
-                <button className="inline-flex items-center gap-1.5 h-12 px-4 rounded-[14px] text-[13.5px] font-medium text-ink-soft hover:text-ink transition-colors">
-                  Open analytics
-                  <ArrowUpRight className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-
-            <div className="relative border-l border-border/60 bg-gradient-to-b from-surface/40 to-transparent p-6 lg:p-8">
-              <div className="text-[11px] font-semibold tracking-[0.14em] text-ink-soft/80">
-                ALSO IN PROGRESS
-              </div>
-              <div className="mt-4 space-y-2">
-                {interviewFollowUps.length
-                  ? interviewFollowUps.map((r) => (
-                      <button
-                        key={r.title}
-                        className="group w-full text-left rounded-[14px] border border-transparent hover:border-border hover:bg-card p-3 transition-all"
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0">
-                            <div className="text-[13.5px] font-medium text-ink truncate">
-                              {r.title}
-                            </div>
-                            <div className="mt-0.5 text-[12px] text-ink-soft">{r.meta}</div>
-                          </div>
-                          <span className="text-[10.5px] font-medium tracking-wide text-accent-foreground bg-accent rounded-full px-2 py-0.5 shrink-0">
-                            {r.tag}
-                          </span>
-                        </div>
-                      </button>
-                    ))
-                  : [
-                      {
-                        title: "Review latest learning session",
-                        meta: "25 min · Learning",
-                        tag: "Learning",
-                      },
-                      {
-                        title: "Prepare portfolio deliverable",
-                        meta: "1h 20m · Work",
-                        tag: "Tasks",
-                      },
-                      {
-                        title: "Plan next interview follow-up",
-                        meta: "15 min · Jobs",
-                        tag: "Applications",
-                      },
-                    ].map((r) => (
-                      <button
-                        key={r.title}
-                        className="group w-full text-left rounded-[14px] border border-transparent hover:border-border hover:bg-card p-3 transition-all"
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0">
-                            <div className="text-[13.5px] font-medium text-ink truncate">
-                              {r.title}
-                            </div>
-                            <div className="mt-0.5 text-[12px] text-ink-soft">{r.meta}</div>
-                          </div>
-                          <span className="text-[10.5px] font-medium tracking-wide text-accent-foreground bg-accent rounded-full px-2 py-0.5 shrink-0">
-                            {r.tag}
-                          </span>
-                        </div>
-                      </button>
-                    ))}
-              </div>
-            </div>
-          </div>
-        </motion.section>
-
-        <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 min-w-0">
-          <div className="min-w-0">
-            <TodayFocus />
-          </div>
-          <ConsistencyRing />
-          <DeepWork />
-          <AIDailySummary />
-          <LearningProgress />
-          <SmartSuggestions />
-          <UpcomingDeadlines />
-          <ActiveGoals />
-          <WeeklyMomentum />
-        </section>
-
-        <footer className="pt-4 pb-2 text-center text-[12px] text-ink-soft/60">
-          GrowthOS · Your second brain
-        </footer>
+        <footer className="pt-6 pb-6 text-center text-[12px] text-ink-soft/60">GrowthOS · Your second brain</footer>
       </div>
     </AppShell>
   );
@@ -300,7 +158,7 @@ function WidgetCard({
     <motion.div
       {...fadeUp}
       transition={{ duration: 0.45 }}
-      className={`group card-soft p-5 transition-all hover:-translate-y-0.5 hover:shadow-[var(--shadow-lifted)] ${className}`}
+      className={`group card-soft p-6 h-full transition-colors transition-shadow transition-transform duration-150 hover:-translate-y-0.5 hover:shadow-[var(--shadow-lifted)] ${className}`}
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 text-[11.5px] font-semibold tracking-[0.12em] text-ink-soft/80">
@@ -346,9 +204,9 @@ function TodayFocus() {
       hint={`${focusItems.length} item${focusItems.length === 1 ? "" : "s"}`}
       icon={CheckCircle2}
     >
-      <div className="space-y-3">
+      <div className="space-y-4">
         {focusItems.slice(0, 4).map((item) => (
-          <div key={item.id} className="rounded-3xl border border-border bg-card p-4">
+          <div key={item.id} className="rounded-3xl border border-border bg-card p-6">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <div className="text-[14px] font-semibold text-ink">{item.title}</div>
@@ -366,12 +224,16 @@ function TodayFocus() {
                 {item.status}
               </span>
             </div>
-            <div className="mt-3 flex items-center justify-between gap-3 text-[11px] text-ink-soft">
+            <div className="mt-4 flex items-center justify-between gap-3 text-[11px] text-ink-soft">
               <span>Priority: {item.priority}</span>
               <span>
-                {item.notes
-                  ? `${item.notes.slice(0, 30)}${item.notes.length > 30 ? "…" : ""}`
-                  : "No notes"}
+                {(item.description ?? (item as any).notes)
+                  ? `${(item.description ?? (item as any).notes).slice(0, 30)}${(
+                      (item.description ?? (item as any).notes) as string
+                    ).length > 30
+                    ? "…"
+                    : ""}`
+                  : "No description"}
               </span>
             </div>
           </div>
@@ -691,5 +553,308 @@ function WeeklyMomentum() {
         See breakdown <ChevronRight className="h-3.5 w-3.5" />
       </Link>
     </WidgetCard>
+  );
+}
+
+// Minimal helper components to support the new Command Center layout
+function DashboardHeader({ totalHours }: { totalHours: number }) {
+  const [name, setName] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    // attempt to read current user from Supabase client if configured
+    (async () => {
+      try {
+        const mod = await import("@/lib/supabase/client");
+        const client = mod.getSupabaseClient();
+        if (client && client.auth && typeof client.auth.getUser === "function") {
+          const res = await client.auth.getUser();
+          if (res?.data?.user?.user_metadata?.full_name) setName(res.data.user.user_metadata.full_name);
+          else if (res?.data?.user?.email) setName(res.data.user.email.split("@")[0]);
+        }
+      } catch (e) {
+        // ignore
+      }
+    })();
+  }, []);
+
+  const hour = new Date().getHours();
+  const greet = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+
+  return (
+    <motion.div {...fadeUp} transition={{ duration: 0.35 }} className="flex items-center justify-between">
+      <div>
+        <h1 className="font-display text-3xl sm:text-4xl lg:text-[34px] font-semibold tracking-[-0.025em] text-ink">
+          {greet}{name ? `, ${name}` : ""} 👋
+        </h1>
+        <p className="mt-1 text-[15px] text-ink-soft">Small steps today, big results tomorrow.</p>
+      </div>
+      <div className="text-[13px] text-ink-soft">
+        <HydratedDate value={new Date()} options={{ weekday: "long", month: "long", day: "numeric" }} />
+      </div>
+    </motion.div>
+  );
+}
+
+function SummaryMetrics({ focusItems, applications, learning }: any) {
+  const todayTotal = focusItems.length;
+  const todayCompleted = focusItems.filter((f: any) => f.status === "Completed").length;
+
+  // applications this week
+  const weekStart = (() => {
+    const d = new Date();
+    const day = d.getDay();
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Monday
+    const monday = new Date(d.setDate(diff));
+    monday.setHours(0, 0, 0, 0);
+    return monday;
+  })();
+  const appsThisWeek = applications.filter((a: any) => new Date(a.appliedDate) >= weekStart).length;
+
+  const learningHoursThisWeek = learning
+    .filter((l: any) => new Date(l.date) >= weekStart)
+    .reduce((s: number, l: any) => s + (l.timeHours || 0), 0);
+
+  // focus streak: insufficient data -> show dash
+  const completedCount = focusItems.filter((f: any) => f.status === "Completed").length;
+  const focusStreak = completedCount >= 1 ? "—" : "—";
+
+  const prefersReduced = useReducedMotion();
+  const pct = todayTotal ? Math.round((todayCompleted / todayTotal) * 100) : 0;
+
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+      <Link to="/focus" className="group">
+        <div className="rounded-2xl border border-border bg-card p-6 h-full cursor-pointer">
+          <div className="flex items-start justify-between">
+            <div className="text-sm font-semibold text-ink-soft">Today's Focus</div>
+            <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-150 text-ink-soft">→</div>
+          </div>
+          <div className="mt-3 flex items-end justify-between">
+            <div className="text-2xl font-semibold text-ink">{todayCompleted} / {todayTotal}</div>
+            <div className="text-sm text-ink-soft">{todayTotal ? "Completed" : "No focus items"}</div>
+          </div>
+
+          <div className="mt-4 h-2 rounded-full bg-muted overflow-hidden">
+            <motion.div
+              initial={{ width: prefersReduced ? `${pct}%` : 0 }}
+              animate={{ width: `${pct}%` }}
+              transition={{ duration: prefersReduced ? 0 : 0.25 }}
+              className="h-full rounded-full bg-primary"
+            />
+          </div>
+        </div>
+      </Link>
+
+      <Link to="/jobs" className="group">
+        <div className="rounded-2xl border border-border bg-card p-6 h-full cursor-pointer">
+          <div className="flex items-start justify-between">
+            <div className="text-sm font-semibold text-ink-soft">Job Applications</div>
+            <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-150 text-ink-soft">→</div>
+          </div>
+          <div className="mt-3 text-2xl font-semibold text-ink">{appsThisWeek}</div>
+          <div className="mt-1 text-sm text-ink-soft">Applied this week</div>
+        </div>
+      </Link>
+
+      <Link to="/learning" className="group">
+        <div className="rounded-2xl border border-border bg-card p-6 h-full cursor-pointer">
+          <div className="flex items-start justify-between">
+            <div className="text-sm font-semibold text-ink-soft">Learning</div>
+            <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-150 text-ink-soft">→</div>
+          </div>
+          <div className="mt-3 text-2xl font-semibold text-ink">{learningHoursThisWeek}</div>
+          <div className="mt-1 text-sm text-ink-soft">Hours this week</div>
+        </div>
+      </Link>
+
+      <div className="rounded-2xl border border-border bg-card p-6 h-full">
+        <div className="flex items-start justify-between">
+          <div className="text-sm font-semibold text-ink-soft">Focus Streak</div>
+        </div>
+        <div className="mt-3 text-2xl font-semibold text-ink">{completedCount >= 1 ? completedCount : "—"}</div>
+        <div className="mt-1 text-sm text-ink-soft">{completedCount >= 1 ? "Days" : "Not enough data"}</div>
+      </div>
+    </div>
+  );
+}
+
+function TodaySchedule({ focusItems }: { focusItems: any[] }) {
+  const sorted = [...focusItems].sort((a, b) => a.startTime.localeCompare(b.startTime));
+  const prefersReduced = useReducedMotion();
+  const now = new Date();
+
+  const isCurrent = (start: string, end: string) => {
+    try {
+      const [sh, sm] = start.split(":" ).map(Number);
+      const [eh, em] = end.split(":" ).map(Number);
+      const s = new Date(); s.setHours(sh, sm, 0, 0);
+      const e = new Date(); e.setHours(eh, em, 0, 0);
+      return now >= s && now <= e;
+    } catch (e) {
+      return false;
+    }
+  };
+
+  return (
+    <WidgetCard title="Today" hint="Agenda" icon={Clock}>
+      {sorted.length ? (
+        <div className="space-y-3">
+          {sorted.map((f) => (
+            <div key={f.id} className="text-sm flex items-start gap-3 hover:bg-muted/50 p-2 rounded-md">
+              <div className="w-10 text-right text-ink-soft">{f.startTime}</div>
+              <div className="min-w-0">
+                <div className={`font-medium ${isCurrent(f.startTime, f.endTime) ? 'text-ink' : ''}`}>{f.title}</div>
+                <div className="text-ink-soft text-xs">{f.category}</div>
+              </div>
+              <div className="ml-auto">
+                {isCurrent(f.startTime, f.endTime) && (
+                  <motion.span
+                    animate={prefersReduced ? {} : { scale: [1, 1.15, 1] }}
+                    transition={{ repeat: Infinity, duration: 1.6 }}
+                    className="h-2 w-2 rounded-full bg-primary block"
+                  />
+                )}
+              </div>
+            </div>
+          ))}
+          <div className="mt-3">
+            <Link to="/calendar" className="inline-flex items-center text-sm text-primary">
+              View full calendar <ChevronRight className="h-4 w-4 ml-1" />
+            </Link>
+          </div>
+        </div>
+        ) : (
+        <div className="rounded-3xl border border-border p-6 text-sm text-ink-soft">Nothing scheduled for today.</div>
+      )}
+    </WidgetCard>
+  );
+}
+
+function QuickStats({ learning, applications, reading }: any) {
+  const totalApplications = applications.length;
+  const learningHours = learning.reduce((s: number, l: any) => s + (l.timeHours || 0), 0);
+  const booksRead = reading.filter((r: any) => r.progress >= 100).length;
+  const focusItems = useFocusStore((s) => s.focusItems);
+  const completed = focusItems.filter((f) => f.status === "Completed").length;
+  const completionPct = focusItems.length ? Math.round((completed / focusItems.length) * 100) : null;
+
+  return (
+    <WidgetCard title="Quick Stats" hint="overview" icon={TrendingUp}>
+      <div className="space-y-3 text-sm">
+        <Link to="/jobs" className="block hover:bg-muted/60 p-2 rounded-md transition-colors">
+          <div className="flex justify-between"><div>Total Applications</div><div className="font-semibold">{totalApplications}</div></div>
+        </Link>
+        <Link to="/learning" className="block hover:bg-muted/60 p-2 rounded-md transition-colors">
+          <div className="flex justify-between"><div>Learning Hours</div><div className="font-semibold">{learningHours}</div></div>
+        </Link>
+        <Link to="/reading" className="block hover:bg-muted/60 p-2 rounded-md transition-colors">
+          <div className="flex justify-between"><div>Books Read</div><div className="font-semibold">{booksRead}</div></div>
+        </Link>
+        <Link to="/focus" className="block hover:bg-muted/60 p-2 rounded-md transition-colors">
+          <div className="flex justify-between"><div>Focus Completion</div><div className="font-semibold">{completionPct !== null ? `${completionPct}%` : "—"}</div></div>
+        </Link>
+      </div>
+    </WidgetCard>
+  );
+}
+
+function JobTrackerPreview({ applications }: { applications: any[] }) {
+  const recent = [...applications].sort((a, b) => new Date(b.appliedDate).getTime() - new Date(a.appliedDate).getTime()).slice(0, 4);
+
+  return (
+    <WidgetCard title="Job Tracker" hint={`${applications.length} tracked`} icon={ArrowUpRight}>
+      {recent.length ? (
+        <div className="space-y-2 text-sm">
+          {recent.map((a) => (
+            <Link key={a.id} to={`/jobs`} className="flex items-center justify-between hover:bg-muted/60 p-2 rounded-md transition-colors">
+              <div className="min-w-0">
+                <div className="font-medium truncate">{a.company}</div>
+                <div className="text-ink-soft text-xs">{a.position}</div>
+              </div>
+              <div className="text-ink-soft text-sm">{new Date(a.appliedDate).toLocaleDateString()}</div>
+            </Link>
+          ))}
+          <div className="mt-2">
+            <Link to="/jobs" className="text-sm text-primary">View all →</Link>
+          </div>
+        </div>
+      ) : (
+        <div className="rounded-3xl border border-border p-6 text-sm text-ink-soft">No applications yet.</div>
+      )}
+    </WidgetCard>
+  );
+}
+
+function RecentActivity({ learning, applications, reading }: any) {
+  const events: { id: string; title: string; date?: string }[] = [];
+  learning.forEach((l: any) => events.push({ id: `l-${l.id}`, title: `Added learning: ${l.topic}`, date: l.date }));
+  applications.forEach((a: any) => events.push({ id: `a-${a.id}`, title: `Updated application: ${a.company}`, date: a.appliedDate }));
+  reading.forEach((r: any) => events.push({ id: `r-${r.id}`, title: `Reading: ${r.book}`, date: r.date }));
+
+  const sorted = events
+    .filter((e) => e.date)
+    .sort((a, b) => new Date(b.date!).getTime() - new Date(a.date!).getTime())
+    .slice(0, 6);
+
+  return (
+    <WidgetCard title="Recent Activity" hint={`${sorted.length} items`} icon={Lightbulb}>
+      {sorted.length ? (
+        <div className="space-y-3 text-sm">
+          {sorted.map((e) => (
+            <div key={e.id} className="hover:bg-muted/60 p-2 rounded-md transition-colors">
+              <div className="font-medium">{e.title}</div>
+              <div className="text-ink-soft text-xs">{e.date ? new Date(e.date).toLocaleString() : ""}</div>
+            </div>
+          ))}
+          <div className="mt-2">
+            <span className="text-sm text-primary">View all →</span>
+          </div>
+        </div>
+      ) : (
+        <div className="rounded-3xl border border-border p-6 text-sm text-ink-soft">No recent activity.</div>
+      )}
+    </WidgetCard>
+  );
+}
+
+function CommandTodayFocus() {
+  const focusItemsRaw = useFocusStore((state) => state.focusItems);
+  const toggle = useFocusStore((s) => s.toggleFocusComplete);
+  const deleteFocus = useFocusStore((s) => s.deleteFocusItem);
+  const items = [...focusItemsRaw].sort((a, b) => a.order - b.order);
+  const completed = items.filter((i) => i.status === "Completed").length;
+
+  return (
+    <div className="rounded-2xl border border-border bg-card p-6 h-full">
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="text-sm font-semibold">Today's Focus</div>
+          <div className="text-xs text-ink-soft">{completed} / {items.length} completed</div>
+        </div>
+        <div>
+          <Link to="/focus" className="text-sm text-primary">+ Add focus</Link>
+        </div>
+      </div>
+      <div className="mt-4 space-y-4">
+        {items.length ? (
+          items.map((it) => (
+            <div key={it.id} className="rounded-lg border border-border p-4">
+              <div className="flex items-start justify-between">
+                <div className="min-w-0">
+                  <div className="font-medium text-sm">{it.title}</div>
+                  <div className="text-ink-soft text-xs">{it.startTime} – {it.endTime} · {it.category}</div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button onClick={() => toggle(it.id)} className="text-sm text-ink-soft">{it.status === 'Completed' ? '✓' : '○'}</button>
+                  <button onClick={() => deleteFocus(it.id)} className="text-sm text-danger">Delete</button>
+                </div>
+              </div>
+            </div>
+          ))
+        ) : (
+          <div className="rounded-3xl border border-border p-6 text-sm text-ink-soft">Nothing planned for today.<div className="mt-3"><Link to="/focus" className="text-primary">+ Add focus</Link></div></div>
+        )}
+      </div>
+    </div>
   );
 }

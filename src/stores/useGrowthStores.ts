@@ -109,7 +109,7 @@ export interface FocusItem {
   endTime: string;
   status: FocusStatus;
   priority: Priority;
-  notes: string;
+  description: string;
   order: number;
 }
 
@@ -450,9 +450,15 @@ export const useFocusStore = create<FocusState>()(
         })),
       updateFocusItem: (id, updates) =>
         set((state) => ({
-          focusItems: state.focusItems.map((item) =>
-            item.id === id ? { ...item, ...updates } : item,
-          ),
+          focusItems: state.focusItems.map((item) => {
+            if (item.id !== id) return item;
+            const updated: any = { ...item, ...updates };
+            if (Object.prototype.hasOwnProperty.call(updates, "description")) {
+              // remove legacy notes property if description is now provided
+              delete updated.notes;
+            }
+            return updated;
+          }),
         })),
       deleteFocusItem: (id) =>
         set((state) => ({
