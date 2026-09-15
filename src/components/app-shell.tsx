@@ -305,15 +305,35 @@ export function AppShell({ children, title }: { children: ReactNode; title?: str
               )}
             </div>
             <div className="ml-auto hidden items-center gap-2 lg:flex">
-              <Button variant="secondary" size="sm" onClick={() => setQuickOpen(true)}>
-                <Plus className="h-3.5 w-3.5" /> Quick Add
-              </Button>
-              <Button variant="secondary" size="sm" onClick={() => setImportOpen(true)}>
-                <UploadCloud className="h-3.5 w-3.5" /> Import
-              </Button>
-              <Button variant="secondary" size="sm" onClick={() => setExportOpen(true)}>
-                <Download className="h-3.5 w-3.5" /> Export
-              </Button>
+              <Button
+  variant="secondary"
+  size="sm"
+  className="rounded-lg border border-[#EEF1F5] bg-[#F8FAFC] text-[#344766] shadow-none transition-colors duration-150 hover:border-[#DDE3EA] hover:bg-[#F1F4F8] hover:text-[#10233F] active:bg-[#E9EDF2] focus-visible:border-[#4263EB] focus-visible:ring-0"
+  onClick={() => setQuickOpen(true)}
+>
+  <Plus className="h-3.5 w-3.5" />
+  Quick Add
+</Button>
+
+<Button
+  variant="secondary"
+  size="sm"
+  className="rounded-lg border border-[#EEF1F5] bg-[#F8FAFC] text-[#344766] shadow-none transition-colors duration-150 hover:border-[#DDE3EA] hover:bg-[#F1F4F8] hover:text-[#10233F] active:bg-[#E9EDF2] focus-visible:border-[#4263EB] focus-visible:ring-0"
+  onClick={() => setImportOpen(true)}
+>
+  <UploadCloud className="h-3.5 w-3.5" />
+  Import
+</Button>
+
+<Button
+  variant="secondary"
+  size="sm"
+  className="rounded-lg border border-[#EEF1F5] bg-[#F8FAFC] text-[#344766] shadow-none transition-colors duration-150 hover:border-[#DDE3EA] hover:bg-[#F1F4F8] hover:text-[#10233F] active:bg-[#E9EDF2] focus-visible:border-[#4263EB] focus-visible:ring-0"
+  onClick={() => setExportOpen(true)}
+>
+  <Download className="h-3.5 w-3.5" />
+  Export
+</Button>
             </div>
           </header>
 
