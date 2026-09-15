@@ -17,6 +17,7 @@ import { Route as LearningRouteImport } from './routes/learning'
 import { Route as KnowledgeRouteImport } from './routes/knowledge'
 import { Route as JobsRouteImport } from './routes/jobs'
 import { Route as GoalsRouteImport } from './routes/goals'
+import { Route as FreelancingRouteImport } from './routes/freelancing'
 import { Route as FocusRouteImport } from './routes/focus'
 import { Route as ExerciseRouteImport } from './routes/exercise'
 import { Route as ConsistencyRouteImport } from './routes/consistency'
@@ -66,6 +67,11 @@ const JobsRoute = JobsRouteImport.update({
 const GoalsRoute = GoalsRouteImport.update({
   id: '/goals',
   path: '/goals',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FreelancingRoute = FreelancingRouteImport.update({
+  id: '/freelancing',
+  path: '/freelancing',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FocusRoute = FocusRouteImport.update({
@@ -127,6 +133,7 @@ export interface FileRoutesByFullPath {
   '/consistency': typeof ConsistencyRoute
   '/exercise': typeof ExerciseRoute
   '/focus': typeof FocusRoute
+  '/freelancing': typeof FreelancingRoute
   '/goals': typeof GoalsRoute
   '/jobs': typeof JobsRoute
   '/knowledge': typeof KnowledgeRouteWithChildren
@@ -147,6 +154,7 @@ export interface FileRoutesByTo {
   '/consistency': typeof ConsistencyRoute
   '/exercise': typeof ExerciseRoute
   '/focus': typeof FocusRoute
+  '/freelancing': typeof FreelancingRoute
   '/goals': typeof GoalsRoute
   '/jobs': typeof JobsRoute
   '/knowledge': typeof KnowledgeRouteWithChildren
@@ -168,6 +176,7 @@ export interface FileRoutesById {
   '/consistency': typeof ConsistencyRoute
   '/exercise': typeof ExerciseRoute
   '/focus': typeof FocusRoute
+  '/freelancing': typeof FreelancingRoute
   '/goals': typeof GoalsRoute
   '/jobs': typeof JobsRoute
   '/knowledge': typeof KnowledgeRouteWithChildren
@@ -190,6 +199,7 @@ export interface FileRouteTypes {
     | '/consistency'
     | '/exercise'
     | '/focus'
+    | '/freelancing'
     | '/goals'
     | '/jobs'
     | '/knowledge'
@@ -210,6 +220,7 @@ export interface FileRouteTypes {
     | '/consistency'
     | '/exercise'
     | '/focus'
+    | '/freelancing'
     | '/goals'
     | '/jobs'
     | '/knowledge'
@@ -230,6 +241,7 @@ export interface FileRouteTypes {
     | '/consistency'
     | '/exercise'
     | '/focus'
+    | '/freelancing'
     | '/goals'
     | '/jobs'
     | '/knowledge'
@@ -251,6 +263,7 @@ export interface RootRouteChildren {
   ConsistencyRoute: typeof ConsistencyRoute
   ExerciseRoute: typeof ExerciseRoute
   FocusRoute: typeof FocusRoute
+  FreelancingRoute: typeof FreelancingRoute
   GoalsRoute: typeof GoalsRoute
   JobsRoute: typeof JobsRoute
   KnowledgeRoute: typeof KnowledgeRouteWithChildren
@@ -317,6 +330,13 @@ declare module '@tanstack/react-router' {
       path: '/goals'
       fullPath: '/goals'
       preLoaderRoute: typeof GoalsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/freelancing': {
+      id: '/freelancing'
+      path: '/freelancing'
+      fullPath: '/freelancing'
+      preLoaderRoute: typeof FreelancingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/focus': {
@@ -435,6 +455,7 @@ const rootRouteChildren: RootRouteChildren = {
   ConsistencyRoute: ConsistencyRoute,
   ExerciseRoute: ExerciseRoute,
   FocusRoute: FocusRoute,
+  FreelancingRoute: FreelancingRoute,
   GoalsRoute: GoalsRoute,
   JobsRoute: JobsRoute,
   KnowledgeRoute: KnowledgeRouteWithChildren,

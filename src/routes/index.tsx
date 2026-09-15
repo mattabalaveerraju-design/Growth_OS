@@ -18,6 +18,9 @@ import {
   CircleDot,
   Lightbulb,
   TrendingUp,
+  Search,
+  Bell,
+  Briefcase,
 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { HydratedDate } from "@/components/client-only";
@@ -92,50 +95,46 @@ function Home() {
 
   return (
     <AppShell title="Command Center">
-      <div className="mx-auto w-full max-w-[1440px] px-8 overflow-x-hidden">
-        {/* Header */}
-        <div className="py-6">
+      <div className="mx-auto w-full max-w-[1440px] overflow-x-hidden px-4 pb-8 sm:px-6 lg:px-8">
+        <div className="pt-6">
           <DashboardHeader totalHours={totalHours} />
         </div>
 
-        {/* Summary cards (32px below header) */}
-        <div className="mt-8">
+        <div className="mt-6">
           <SummaryMetrics focusItems={focusItems} applications={applications} learning={learning} />
         </div>
 
-        {/* Main grid (24px below summary) */}
         <div className="mt-6">
           <div className="grid grid-cols-12 gap-5 items-stretch">
-            <main className="col-span-12 lg:col-span-6 flex flex-col gap-6">
+            <main className="col-span-12 lg:col-span-6">
               <CommandTodayFocus />
             </main>
 
-            <aside className="col-span-12 lg:col-span-3 flex flex-col gap-6">
+            <aside className="col-span-12 lg:col-span-3">
               <TodaySchedule focusItems={focusItems} />
             </aside>
 
-            <aside className="col-span-12 lg:col-span-3 flex flex-col gap-6">
+            <aside className="col-span-12 lg:col-span-3">
               <QuickStats learning={learning} applications={applications} reading={reading} />
             </aside>
           </div>
         </div>
 
-        {/* Secondary grid (24px below main) */}
         <div className="mt-6">
           <div className="grid grid-cols-12 gap-5 items-stretch">
-            <div className="col-span-12 lg:col-span-6">
+            <div className="col-span-12 lg:col-span-4">
               <LearningProgress />
             </div>
-            <div className="col-span-12 lg:col-span-3">
+            <div className="col-span-12 lg:col-span-4">
               <JobTrackerPreview applications={applications} />
             </div>
-            <div className="col-span-12 lg:col-span-3">
+            <div className="col-span-12 lg:col-span-4">
               <RecentActivity learning={learning} applications={applications} reading={reading} />
             </div>
           </div>
         </div>
 
-        <footer className="pt-6 pb-6 text-center text-[12px] text-ink-soft/60">GrowthOS · Your second brain</footer>
+        <footer className="pt-8 text-center text-[12px] text-ink-soft/60">GrowthOS · Your second brain</footer>
       </div>
     </AppShell>
   );
@@ -271,18 +270,12 @@ function ConsistencyRing() {
               r="38"
               strokeWidth="8"
               strokeLinecap="round"
-              className="fill-none stroke-[url(#ringGrad)]"
+              className="fill-none stroke-[var(--cmd-focus-accent)]"
               initial={{ strokeDashoffset: circumference }}
               animate={{ strokeDashoffset: offset }}
               transition={{ duration: 1, ease: [0.22, 1, 0.36, 1], delay: 0.2 }}
               style={{ strokeDasharray: circumference }}
             />
-            <defs>
-              <linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0%" stopColor="oklch(0.52 0.22 275)" />
-                <stop offset="100%" stopColor="oklch(0.62 0.25 295)" />
-              </linearGradient>
-            </defs>
           </svg>
           <div className="absolute inset-0 grid place-items-center">
             <div className="text-center">
@@ -364,7 +357,7 @@ function AIDailySummary() {
       className="md:col-span-2"
     >
       <div className="flex gap-4">
-        <div className="h-9 w-9 rounded-[10px] bg-gradient-to-br from-primary to-violet grid place-items-center shrink-0 shadow-sm">
+        <div className="h-9 w-9 rounded-[10px] bg-[var(--cmd-focus-icon)] grid place-items-center shrink-0 shadow-sm">
           <Sparkles className="h-4 w-4 text-primary-foreground" />
         </div>
         <div className="text-[14px] leading-[1.6] text-ink/90">
@@ -387,36 +380,55 @@ function LearningProgress() {
   const suggested = Math.min(100, Math.max(20, learning.length * 12));
 
   return (
-    <WidgetCard title="Learning" hint={`${learning.length} records`} icon={GraduationCap}>
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.45 }}
+      className="h-full rounded-[24px] border border-border bg-white p-5 shadow-[0_8px_24px_-20px_rgba(32,36,61,0.2)]"
+    >
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-soft/70">
+          <GraduationCap className="h-3.5 w-3.5" />
+          Learning
+        </div>
+        <div className="text-[11px] text-ink-soft">{learning.length} records</div>
+      </div>
+
       {learning.length ? (
-        <>
-          <div className="text-[13.5px] font-semibold text-ink">{learning[0]?.topic}</div>
-          <div className="text-[12px] text-ink-soft">
+        <div className="mt-5">
+          <div className="text-[15px] font-semibold text-ink">{learning[0]?.topic}</div>
+          <div className="mt-1 text-[13px] text-ink-soft">
             {learning[0]?.category} · {learning[0]?.timeHours.toFixed(1)}h
           </div>
-          <div className="mt-3 h-1 w-full rounded-full bg-muted overflow-hidden">
+          <div className="mt-4 h-2 overflow-hidden rounded-full bg-muted">
             <motion.div
               initial={{ width: 0 }}
               animate={{ width: `${suggested}%` }}
               transition={{ duration: 0.8, delay: 0.2 }}
-              className="h-full rounded-full bg-violet"
+              className="h-full rounded-full bg-[var(--cmd-learning-accent)]"
             />
           </div>
-          <div className="mt-3 flex items-center gap-3 text-[12px]">
-            <span className="inline-flex items-center gap-1.5 text-ink-soft">
-              <CircleDot className="h-3 w-3 text-violet" /> {learning.length} topics tracked
-            </span>
-            <span className="inline-flex items-center gap-1.5 text-warning">
-              <AlertCircle className="h-3 w-3" /> {Math.max(0, 5 - learning.length)} fresh topics
+          <div className="mt-4 flex items-center gap-3 text-[12px] text-ink-soft">
+            <span className="inline-flex items-center gap-1.5">
+              <CircleDot className="h-3 w-3 text-[var(--cmd-learning-accent)]" /> {learning.length} topics tracked
             </span>
           </div>
-        </>
+        </div>
       ) : (
-        <div className="rounded-3xl border border-border p-6 text-sm text-ink-soft">
-          No learning records yet.
+        <div className="mt-5 flex min-h-[220px] flex-col items-center justify-center rounded-[20px] border border-dashed border-border bg-white px-5 py-6 text-center">
+          <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-[#e8f6ef] text-[var(--cmd-learning-accent)]">
+            <GraduationCap className="h-4 w-4" />
+          </div>
+          <div className="text-[15px] font-semibold text-ink">No learning records yet.</div>
+          <p className="mt-2 max-w-[240px] text-[13px] leading-5 text-ink-soft">
+            Start learning something new and build your skills.
+          </p>
+          <Link to="/learning" className="mt-4 inline-flex items-center gap-1 text-[13px] font-medium text-[var(--cmd-learning-accent)]">
+            Go to Learning <ChevronRight className="h-4 w-4" />
+          </Link>
         </div>
       )}
-    </WidgetCard>
+    </motion.div>
   );
 }
 
@@ -581,17 +593,42 @@ function DashboardHeader({ totalHours }: { totalHours: number }) {
   const greet = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
 
   return (
-    <motion.div {...fadeUp} transition={{ duration: 0.35 }} className="flex items-center justify-between">
-      <div>
-        <h1 className="font-display text-3xl sm:text-4xl lg:text-[34px] font-semibold tracking-[-0.025em] text-ink">
+    <motion.header
+      {...fadeUp}
+      transition={{ duration: 0.35 }}
+      className="flex flex-col gap-4 rounded-[28px] border border-border bg-white px-5 py-4 shadow-[0_8px_24px_-22px_rgba(32,36,61,0.2)] sm:px-6 lg:flex-row lg:items-center lg:justify-between"
+    >
+      <div className="min-w-0">
+        <h1 className="font-display text-[28px] font-semibold tracking-[-0.04em] text-ink sm:text-[30px]">
           {greet}{name ? `, ${name}` : ""} 👋
         </h1>
-        <p className="mt-1 text-[15px] text-ink-soft">Small steps today, big results tomorrow.</p>
+        <p className="mt-1 text-[14px] text-ink-soft">Small steps every day create big results.</p>
       </div>
-      <div className="text-[13px] text-ink-soft">
-        <HydratedDate value={new Date()} options={{ weekday: "long", month: "long", day: "numeric" }} />
+
+      <div className="flex items-center gap-3 self-start lg:self-auto">
+        <div className="hidden rounded-full border border-border bg-muted/50 px-3 py-1.5 text-[12px] font-medium text-ink-soft sm:block">
+          <HydratedDate value={new Date()} options={{ weekday: "long", month: "long", day: "numeric" }} />
+        </div>
+
+        <button
+          type="button"
+          aria-label="Search"
+          className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-white text-ink-soft transition-colors hover:text-ink"
+        >
+          <Search className="h-4 w-4" />
+        </button>
+        <button
+          type="button"
+          aria-label="Notifications"
+          className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-white text-ink-soft transition-colors hover:text-ink"
+        >
+          <Bell className="h-4 w-4" />
+        </button>
+        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--cmd-focus-icon)] text-[12px] font-semibold text-ink">
+          BM
+        </div>
       </div>
-    </motion.div>
+    </motion.header>
   );
 }
 
@@ -599,81 +636,109 @@ function SummaryMetrics({ focusItems, applications, learning }: any) {
   const todayTotal = focusItems.length;
   const todayCompleted = focusItems.filter((f: any) => f.status === "Completed").length;
 
-  // applications this week
   const weekStart = (() => {
     const d = new Date();
     const day = d.getDay();
-    const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Monday
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1);
     const monday = new Date(d.setDate(diff));
     monday.setHours(0, 0, 0, 0);
     return monday;
   })();
-  const appsThisWeek = applications.filter((a: any) => new Date(a.appliedDate) >= weekStart).length;
 
+  const appsThisWeek = applications.filter((a: any) => new Date(a.appliedDate) >= weekStart).length;
   const learningHoursThisWeek = learning
     .filter((l: any) => new Date(l.date) >= weekStart)
     .reduce((s: number, l: any) => s + (l.timeHours || 0), 0);
 
-  // focus streak: insufficient data -> show dash
   const completedCount = focusItems.filter((f: any) => f.status === "Completed").length;
-  const focusStreak = completedCount >= 1 ? "—" : "—";
-
   const prefersReduced = useReducedMotion();
   const pct = todayTotal ? Math.round((todayCompleted / todayTotal) * 100) : 0;
 
+  const cards = [
+    {
+      key: "focus",
+      link: "/focus",
+      tone: "bg-[var(--cmd-focus-bg)] border-[var(--cmd-focus-border)]",
+      label: "Today's Focus",
+      metric: `${todayCompleted} / ${todayTotal}`,
+      meta: todayTotal ? "Completed" : "No focus items",
+      icon: CheckCircle2,
+      iconTone: "text-[var(--cmd-focus-accent)]",
+      bar: true,
+    },
+    {
+      key: "jobs",
+      link: "/jobs",
+      tone: "bg-[var(--cmd-jobs-bg)] border-[var(--cmd-jobs-border)]",
+      label: "Job Applications",
+      metric: String(appsThisWeek),
+      meta: "Applied this week",
+      icon: Briefcase,
+      iconTone: "text-[var(--cmd-jobs-accent)]",
+      bar: false,
+    },
+    {
+      key: "learning",
+      link: "/learning",
+      tone: "bg-[var(--cmd-learning-bg)] border-[var(--cmd-learning-border)]",
+      label: "Learning",
+      metric: String(Number(learningHoursThisWeek).toFixed(0)),
+      meta: "Hours this week",
+      icon: GraduationCap,
+      iconTone: "text-[var(--cmd-learning-accent)]",
+      bar: false,
+    },
+    {
+      key: "streak",
+      link: "/focus",
+      tone: "bg-[var(--cmd-streak-bg)] border-[var(--cmd-streak-border)]",
+      label: "Focus Streak",
+      metric: completedCount >= 1 ? String(completedCount) : "—",
+      meta: completedCount >= 1 ? "Days" : "Not enough data",
+      icon: Flame,
+      iconTone: "text-[var(--cmd-streak-accent)]",
+      bar: false,
+    },
+  ];
+
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-      <Link to="/focus" className="group">
-        <div className="rounded-2xl border border-border bg-card p-6 h-full cursor-pointer">
-          <div className="flex items-start justify-between">
-            <div className="text-sm font-semibold text-ink-soft">Today's Focus</div>
-            <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-150 text-ink-soft">→</div>
-          </div>
-          <div className="mt-3 flex items-end justify-between">
-            <div className="text-2xl font-semibold text-ink">{todayCompleted} / {todayTotal}</div>
-            <div className="text-sm text-ink-soft">{todayTotal ? "Completed" : "No focus items"}</div>
-          </div>
+    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
+      {cards.map((card) => {
+        const Icon = card.icon;
 
-          <div className="mt-4 h-2 rounded-full bg-muted overflow-hidden">
-            <motion.div
-              initial={{ width: prefersReduced ? `${pct}%` : 0 }}
-              animate={{ width: `${pct}%` }}
-              transition={{ duration: prefersReduced ? 0 : 0.25 }}
-              className="h-full rounded-full bg-primary"
-            />
-          </div>
-        </div>
-      </Link>
+        return (
+          <Link key={card.key} to={card.link} className="group block h-full">
+            <div
+              className={`flex h-full min-h-[180px] flex-col justify-between rounded-[22px] border ${card.tone} p-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--cmd-secondary-border)] hover:shadow-[0_12px_30px_-20px_rgba(32,36,61,0.18)]`}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-soft/75">
+                  <Icon className={`h-3.5 w-3.5 ${card.iconTone}`} />
+                  {card.label}
+                </div>
+              </div>
 
-      <Link to="/jobs" className="group">
-        <div className="rounded-2xl border border-border bg-card p-6 h-full cursor-pointer">
-          <div className="flex items-start justify-between">
-            <div className="text-sm font-semibold text-ink-soft">Job Applications</div>
-            <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-150 text-ink-soft">→</div>
-          </div>
-          <div className="mt-3 text-2xl font-semibold text-ink">{appsThisWeek}</div>
-          <div className="mt-1 text-sm text-ink-soft">Applied this week</div>
-        </div>
-      </Link>
+              <div className="mt-6">
+                <div className="text-[30px] font-semibold tracking-[-0.05em] text-ink">{card.metric}</div>
+                <div className="mt-1 text-[13px] text-ink-soft">{card.meta}</div>
+              </div>
 
-      <Link to="/learning" className="group">
-        <div className="rounded-2xl border border-border bg-card p-6 h-full cursor-pointer">
-          <div className="flex items-start justify-between">
-            <div className="text-sm font-semibold text-ink-soft">Learning</div>
-            <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-150 text-ink-soft">→</div>
-          </div>
-          <div className="mt-3 text-2xl font-semibold text-ink">{learningHoursThisWeek}</div>
-          <div className="mt-1 text-sm text-ink-soft">Hours this week</div>
-        </div>
-      </Link>
-
-      <div className="rounded-2xl border border-border bg-card p-6 h-full">
-        <div className="flex items-start justify-between">
-          <div className="text-sm font-semibold text-ink-soft">Focus Streak</div>
-        </div>
-        <div className="mt-3 text-2xl font-semibold text-ink">{completedCount >= 1 ? completedCount : "—"}</div>
-        <div className="mt-1 text-sm text-ink-soft">{completedCount >= 1 ? "Days" : "Not enough data"}</div>
-      </div>
+              {card.bar && (
+                <div className="mt-5">
+                  <div className="h-2 overflow-hidden rounded-full bg-[var(--cmd-focus-progress-track)]">
+                    <motion.div
+                      initial={{ width: prefersReduced ? `${pct}%` : 0 }}
+                      animate={{ width: `${pct}%` }}
+                      transition={{ duration: prefersReduced ? 0 : 0.3 }}
+                      className="h-full rounded-full bg-[var(--cmd-focus-progress-fill)]"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          </Link>
+        );
+      })}
     </div>
   );
 }
@@ -685,10 +750,12 @@ function TodaySchedule({ focusItems }: { focusItems: any[] }) {
 
   const isCurrent = (start: string, end: string) => {
     try {
-      const [sh, sm] = start.split(":" ).map(Number);
-      const [eh, em] = end.split(":" ).map(Number);
-      const s = new Date(); s.setHours(sh, sm, 0, 0);
-      const e = new Date(); e.setHours(eh, em, 0, 0);
+      const [sh, sm] = start.split(":").map(Number);
+      const [eh, em] = end.split(":").map(Number);
+      const s = new Date();
+      s.setHours(sh, sm, 0, 0);
+      const e = new Date();
+      e.setHours(eh, em, 0, 0);
       return now >= s && now <= e;
     } catch (e) {
       return false;
@@ -696,37 +763,63 @@ function TodaySchedule({ focusItems }: { focusItems: any[] }) {
   };
 
   return (
-    <WidgetCard title="Today" hint="Agenda" icon={Clock}>
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.45 }}
+      className="h-full rounded-[24px] border border-border bg-white p-5 shadow-[0_8px_24px_-20px_rgba(32,36,61,0.2)]"
+    >
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-soft/70">
+          <Clock className="h-3.5 w-3.5" />
+          Today
+        </div>
+        <div className="text-[11px] text-ink-soft">Agenda</div>
+      </div>
+
       {sorted.length ? (
-        <div className="space-y-3">
+        <div className="mt-5 space-y-3">
           {sorted.map((f) => (
-            <div key={f.id} className="text-sm flex items-start gap-3 hover:bg-muted/50 p-2 rounded-md">
-              <div className="w-10 text-right text-ink-soft">{f.startTime}</div>
-              <div className="min-w-0">
-                <div className={`font-medium ${isCurrent(f.startTime, f.endTime) ? 'text-ink' : ''}`}>{f.title}</div>
-                <div className="text-ink-soft text-xs">{f.category}</div>
-              </div>
-              <div className="ml-auto">
-                {isCurrent(f.startTime, f.endTime) && (
-                  <motion.span
-                    animate={prefersReduced ? {} : { scale: [1, 1.15, 1] }}
-                    transition={{ repeat: Infinity, duration: 1.6 }}
-                    className="h-2 w-2 rounded-full bg-primary block"
-                  />
-                )}
+            <div
+              key={f.id}
+              className="rounded-[16px] border border-border bg-white p-3 transition-colors hover:bg-[#f7f9fc]"
+            >
+              <div className="flex items-start gap-3">
+                <div className="w-12 shrink-0 pt-0.5 text-[12px] font-medium text-ink-soft">
+                  {f.startTime}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="text-[14px] font-medium text-ink">{f.title}</div>
+                  <div className="mt-1 text-[12px] text-ink-soft">{f.category}</div>
+                </div>
+                <div className="pt-1">
+                  {isCurrent(f.startTime, f.endTime) && (
+                    <motion.span
+                      animate={prefersReduced ? {} : { scale: [1, 1.15, 1] }}
+                      transition={{ repeat: Infinity, duration: 1.6 }}
+                      className="block h-2 w-2 rounded-full bg-[var(--cmd-streak-accent)]"
+                    />
+                  )}
+                </div>
               </div>
             </div>
           ))}
-          <div className="mt-3">
-            <Link to="/calendar" className="inline-flex items-center text-sm text-primary">
-              View full calendar <ChevronRight className="h-4 w-4 ml-1" />
+
+          <div className="pt-1">
+            <Link to="/calendar" className="inline-flex items-center gap-1 text-[13px] font-medium text-primary">
+              View full calendar <ChevronRight className="h-4 w-4" />
             </Link>
           </div>
         </div>
-        ) : (
-        <div className="rounded-3xl border border-border p-6 text-sm text-ink-soft">Nothing scheduled for today.</div>
+      ) : (
+        <div className="mt-5 flex min-h-[180px] flex-col items-center justify-center rounded-[20px] border border-dashed border-border bg-white px-4 py-6 text-center text-[14px] text-ink-soft">
+          <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-[#f0ebff] text-[var(--cmd-streak-accent)]">
+            <Clock className="h-4 w-4" />
+          </div>
+          <div>Nothing scheduled for today.</div>
+        </div>
       )}
-    </WidgetCard>
+    </motion.div>
   );
 }
 
@@ -736,25 +829,43 @@ function QuickStats({ learning, applications, reading }: any) {
   const booksRead = reading.filter((r: any) => r.progress >= 100).length;
   const focusItems = useFocusStore((s) => s.focusItems);
   const completed = focusItems.filter((f) => f.status === "Completed").length;
-  const completionPct = focusItems.length ? Math.round((completed / focusItems.length) * 100) : null;
+  const completionPct = focusItems.length ? Math.round((completed / focusItems.length) * 100) : 0;
+
+  const stats = [
+    { label: "Total Applications", value: totalApplications, to: "/jobs" },
+    { label: "Learning Hours", value: learningHours, to: "/learning" },
+    { label: "Books Read", value: booksRead, to: "/reading" },
+    { label: "Focus Completion", value: `${completionPct}%`, to: "/focus" },
+  ];
 
   return (
-    <WidgetCard title="Quick Stats" hint="overview" icon={TrendingUp}>
-      <div className="space-y-3 text-sm">
-        <Link to="/jobs" className="block hover:bg-muted/60 p-2 rounded-md transition-colors">
-          <div className="flex justify-between"><div>Total Applications</div><div className="font-semibold">{totalApplications}</div></div>
-        </Link>
-        <Link to="/learning" className="block hover:bg-muted/60 p-2 rounded-md transition-colors">
-          <div className="flex justify-between"><div>Learning Hours</div><div className="font-semibold">{learningHours}</div></div>
-        </Link>
-        <Link to="/reading" className="block hover:bg-muted/60 p-2 rounded-md transition-colors">
-          <div className="flex justify-between"><div>Books Read</div><div className="font-semibold">{booksRead}</div></div>
-        </Link>
-        <Link to="/focus" className="block hover:bg-muted/60 p-2 rounded-md transition-colors">
-          <div className="flex justify-between"><div>Focus Completion</div><div className="font-semibold">{completionPct !== null ? `${completionPct}%` : "—"}</div></div>
-        </Link>
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.45 }}
+      className="h-full rounded-[24px] border border-[var(--cmd-quick-border)] bg-white p-5 shadow-[0_8px_24px_-20px_rgba(32,36,61,0.2)]"
+    >
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-soft/70">
+          <TrendingUp className="h-3.5 w-3.5" />
+          Quick Stats
+        </div>
+        <div className="text-[11px] text-ink-soft">Overview</div>
       </div>
-    </WidgetCard>
+
+      <div className="mt-5 divide-y divide-[var(--cmd-border-subtle)] rounded-[18px] border border-[var(--cmd-quick-border)] bg-white">
+        {stats.map((stat) => (
+          <Link
+            key={stat.label}
+            to={stat.to}
+            className="group flex items-center justify-between px-3 py-3 transition-colors hover:bg-[#f7f9fc]"
+          >
+            <span className="text-[14px] text-ink-soft">{stat.label}</span>
+            <span className="text-[14px] font-semibold text-ink">{stat.value}</span>
+          </Link>
+        ))}
+      </div>
+    </motion.div>
   );
 }
 
@@ -762,26 +873,54 @@ function JobTrackerPreview({ applications }: { applications: any[] }) {
   const recent = [...applications].sort((a, b) => new Date(b.appliedDate).getTime() - new Date(a.appliedDate).getTime()).slice(0, 4);
 
   return (
-    <WidgetCard title="Job Tracker" hint={`${applications.length} tracked`} icon={ArrowUpRight}>
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.45 }}
+      className="h-full rounded-[24px] border border-border bg-white p-5 shadow-[0_8px_24px_-20px_rgba(32,36,61,0.2)]"
+    >
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-soft/70">
+          <Briefcase className="h-3.5 w-3.5" />
+          Job Tracker
+        </div>
+        <div className="text-[11px] text-ink-soft">{applications.length} tracked</div>
+      </div>
+
       {recent.length ? (
-        <div className="space-y-2 text-sm">
+        <div className="mt-5 space-y-2 text-sm">
           {recent.map((a) => (
-            <Link key={a.id} to={`/jobs`} className="flex items-center justify-between hover:bg-muted/60 p-2 rounded-md transition-colors">
+            <Link key={a.id} to={`/jobs`} className="flex items-center justify-between rounded-[14px] p-2 transition-colors hover:bg-white">
               <div className="min-w-0">
-                <div className="font-medium truncate">{a.company}</div>
-                <div className="text-ink-soft text-xs">{a.position}</div>
+                <div className="truncate text-[14px] font-medium text-ink">{a.company}</div>
+                <div className="mt-0.5 text-[12px] text-ink-soft">{a.position}</div>
               </div>
-              <div className="text-ink-soft text-sm">{new Date(a.appliedDate).toLocaleDateString()}</div>
+              <div className="ml-3 text-[12px] text-ink-soft">
+                {new Date(a.appliedDate).toLocaleDateString()}
+              </div>
             </Link>
           ))}
-          <div className="mt-2">
-            <Link to="/jobs" className="text-sm text-primary">View all →</Link>
+          <div className="pt-2">
+            <Link to="/jobs" className="inline-flex items-center gap-1 text-[13px] font-medium text-primary">
+              View Jobs <ChevronRight className="h-4 w-4" />
+            </Link>
           </div>
         </div>
       ) : (
-        <div className="rounded-3xl border border-border p-6 text-sm text-ink-soft">No applications yet.</div>
+        <div className="mt-5 flex min-h-[220px] flex-col items-center justify-center rounded-[20px] border border-dashed border-border bg-white px-5 py-6 text-center">
+          <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-[var(--cmd-jobs-icon)] text-[var(--cmd-jobs-accent)]">
+            <Briefcase className="h-4 w-4" />
+          </div>
+          <div className="text-[15px] font-semibold text-ink">No applications yet.</div>
+          <p className="mt-2 max-w-[220px] text-[13px] leading-5 text-ink-soft">
+            Track your applications and move closer to your goals.
+          </p>
+          <Link to="/jobs" className="mt-4 inline-flex items-center gap-1 text-[13px] font-medium text-[var(--cmd-jobs-accent)]">
+            View Jobs <ChevronRight className="h-4 w-4" />
+          </Link>
+        </div>
       )}
-    </WidgetCard>
+    </motion.div>
   );
 }
 
@@ -797,23 +936,43 @@ function RecentActivity({ learning, applications, reading }: any) {
     .slice(0, 6);
 
   return (
-    <WidgetCard title="Recent Activity" hint={`${sorted.length} items`} icon={Lightbulb}>
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.45 }}
+      className="h-full rounded-[24px] border border-border bg-white p-5 shadow-[0_8px_24px_-20px_rgba(32,36,61,0.2)]"
+    >
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-soft/70">
+          <Lightbulb className="h-3.5 w-3.5" />
+          Recent Activity
+        </div>
+        <div className="text-[11px] text-ink-soft">{sorted.length} items</div>
+      </div>
+
       {sorted.length ? (
-        <div className="space-y-3 text-sm">
+        <div className="mt-5 space-y-3 text-sm">
           {sorted.map((e) => (
-            <div key={e.id} className="hover:bg-muted/60 p-2 rounded-md transition-colors">
-              <div className="font-medium">{e.title}</div>
-              <div className="text-ink-soft text-xs">{e.date ? new Date(e.date).toLocaleString() : ""}</div>
+            <div key={e.id} className="rounded-[14px] border border-border bg-white p-3">
+              <div className="font-medium text-[14px] text-ink">{e.title}</div>
+              <div className="mt-1 text-[12px] text-ink-soft">
+                {e.date ? new Date(e.date).toLocaleString() : ""}
+              </div>
             </div>
           ))}
-          <div className="mt-2">
-            <span className="text-sm text-primary">View all →</span>
-          </div>
         </div>
       ) : (
-        <div className="rounded-3xl border border-border p-6 text-sm text-ink-soft">No recent activity.</div>
+        <div className="mt-5 flex min-h-[220px] flex-col items-center justify-center rounded-[20px] border border-dashed border-border bg-white px-5 py-6 text-center">
+          <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-[#f0ebff] text-[var(--cmd-streak-accent)]">
+            <Lightbulb className="h-4 w-4" />
+          </div>
+          <div className="text-[15px] font-semibold text-ink">No recent activity.</div>
+          <p className="mt-2 max-w-[220px] text-[13px] leading-5 text-ink-soft">
+            Your latest actions will appear here.
+          </p>
+        </div>
       )}
-    </WidgetCard>
+    </motion.div>
   );
 }
 
@@ -825,36 +984,82 @@ function CommandTodayFocus() {
   const completed = items.filter((i) => i.status === "Completed").length;
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-6 h-full">
-      <div className="flex items-center justify-between">
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.45 }}
+      className="h-full rounded-[24px] border border-border bg-white p-5 shadow-[0_8px_24px_-20px_rgba(32,36,61,0.2)]"
+    >
+      <div className="flex items-center justify-between gap-3">
         <div>
-          <div className="text-sm font-semibold">Today's Focus</div>
-          <div className="text-xs text-ink-soft">{completed} / {items.length} completed</div>
+          <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-soft/70">
+            Today's Focus
+          </div>
+          <div className="mt-1 text-[14px] text-ink-soft">{completed} / {items.length} completed</div>
         </div>
-        <div>
-          <Link to="/focus" className="text-sm text-primary">+ Add focus</Link>
-        </div>
+        <Link
+          to="/focus"
+          className="inline-flex items-center gap-1 rounded-full border border-border bg-white/80 px-3 py-1.5 text-[12px] font-medium text-ink transition-colors hover:bg-white"
+        >
+          + Add focus
+        </Link>
       </div>
-      <div className="mt-4 space-y-4">
+
+      <div className="mt-5 space-y-4">
         {items.length ? (
           items.map((it) => (
-            <div key={it.id} className="rounded-lg border border-border p-4">
-              <div className="flex items-start justify-between">
-                <div className="min-w-0">
-                  <div className="font-medium text-sm">{it.title}</div>
-                  <div className="text-ink-soft text-xs">{it.startTime} – {it.endTime} · {it.category}</div>
+            <div key={it.id} className="rounded-[18px] border border-border bg-white p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <div className="text-[15px] font-semibold text-ink">{it.title}</div>
+                  <div className="mt-1 text-[13px] text-ink-soft">
+                    {it.startTime} – {it.endTime} · {it.category}
+                  </div>
                 </div>
+
                 <div className="flex items-center gap-2">
-                  <button onClick={() => toggle(it.id)} className="text-sm text-ink-soft">{it.status === 'Completed' ? '✓' : '○'}</button>
-                  <button onClick={() => deleteFocus(it.id)} className="text-sm text-danger">Delete</button>
+                  <button
+                    type="button"
+                    aria-label={it.status === "Completed" ? "Mark incomplete" : "Mark complete"}
+                    onClick={() => toggle(it.id)}
+                    className={`inline-flex h-8 w-8 items-center justify-center rounded-full border text-[12px] font-medium transition-colors ${
+                      it.status === "Completed"
+                        ? "border-[var(--cmd-learning-accent)] bg-[var(--cmd-learning-icon)] text-[var(--cmd-learning-accent)]"
+                        : "border-border bg-white text-ink-soft hover:text-ink"
+                    }`}
+                  >
+                    {it.status === "Completed" ? "✓" : "○"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => deleteFocus(it.id)}
+                    className="text-[12px] font-medium text-ink-soft transition-colors hover:text-danger"
+                  >
+                    Delete
+                  </button>
                 </div>
               </div>
+
+              {it.description && (
+                <p className="mt-3 text-[13px] leading-5 text-ink-soft">{it.description}</p>
+              )}
             </div>
           ))
         ) : (
-          <div className="rounded-3xl border border-border p-6 text-sm text-ink-soft">Nothing planned for today.<div className="mt-3"><Link to="/focus" className="text-primary">+ Add focus</Link></div></div>
+          <div className="flex min-h-[220px] flex-col items-center justify-center rounded-[20px] border border-dashed border-border bg-white px-5 py-6 text-center">
+            <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-[#e8efff] text-[var(--cmd-focus-accent)]">
+              <CheckCircle2 className="h-4 w-4" />
+            </div>
+            <div className="text-[15px] font-semibold text-ink">Nothing planned for today.</div>
+            <p className="mt-2 max-w-[260px] text-[13px] leading-5 text-ink-soft">
+              There is currently nothing planned, but you can start whenever you're ready.
+            </p>
+            <Link to="/focus" className="mt-4 inline-flex items-center gap-1 text-[13px] font-medium text-primary">
+              + Add focus
+            </Link>
+          </div>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 }
