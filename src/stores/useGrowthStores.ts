@@ -1,5 +1,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
+import { getSupabaseClient } from "../lib/supabase";
+
 
 type Priority = "Low" | "Medium" | "High" | "Critical";
 export type TaskStatus = "Todo" | "In Progress" | "Done" | "Blocked" | "Review";
@@ -202,6 +204,45 @@ interface TaskState {
   deleteTask: (id: string) => void;
 }
 
+interface SupabaseTaskRow {
+  id: string;
+  user_id: string;
+  title: string;
+  category: string;
+  priority: Priority;
+  status: TaskStatus;
+  due_date: string | null;
+  notes: string | null;
+  checklist: ChecklistItem[] | null;
+}
+
+function taskFromSupabase(row: SupabaseTaskRow): TaskItem {
+  return {
+    id: row.id,
+    title: row.title,
+    category: row.category,
+    priority: row.priority,
+    status: row.status,
+    dueDate: row.due_date ?? "",
+    notes: row.notes ?? undefined,
+    checklist: row.checklist ?? [],
+  };
+}
+
+function taskToSupabase(task: TaskItem, userId: string) {
+  return {
+    id: task.id,
+    user_id: userId,
+    title: task.title,
+    category: task.category,
+    priority: task.priority,
+    status: task.status,
+    due_date: task.dueDate,
+    notes: task.notes ?? null,
+    checklist: task.checklist ?? [],
+  };
+}
+
 interface LearningState {
   learning: LearningItem[];
   addLearning: (item: Omit<LearningItem, "id">) => void;
@@ -292,23 +333,214 @@ interface SettingsState {
 
 export const useTaskStore = create<TaskState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       tasks: [],
-      // daily checklist mode
-      // stored separately so dashboard can display and it can reset each day
-      // We'll add functions to manage and auto-reset based on date
-      // (kept lightweight here)
-      // Note: not part of TaskState type above to avoid TS noise in callers that use TaskState only.
-      addTask: (task) => set((state) => ({ tasks: [...state.tasks, { id: createId(), ...task }] })),
-      updateTask: (id, updates) =>
+
+      addTask: (task) => {
+        const newTask: TaskItem = {
+          id: createId(),
+          ...task,
+        };
+
         set((state) => ({
-          tasks: state.tasks.map((task) => (task.id === id ? { ...task, ...updates } : task)),
-        })),
-      deleteTask: (id) => set((state) => ({ tasks: state.tasks.filter((task) => task.id !== id) })),
+          tasks: [...state.tasks, newTask],
+        }));
+
+        void (async () => {
+          const supabase = getSupabaseClient();
+          if (!supabase) return;
+
+          const {
+            data: { user },
+          } = await supabase.auth.getUser();
+
+          if (!user) return;
+
+          const { error } = await supabase.from("tasks").insert({
+            id: newTask.id,
+            user_id: user.id,
+            title: newTask.title,
+            category: newTask.category,
+            priority: newTask.priority,
+            status: newTask.status,
+            due_date: newTask.dueDate,
+            notes: newTask.notes ?? null,
+            checklist: newTask.checklist ?? [],
+          });
+
+          if (error) {
+            console.error("Failed to save task to Supabase:", error);
+          }
+        })();
+      },
+
+      updateTask: (id, updates) => {
+        set((state) => ({
+          tasks: state.tasks.map((task) =>
+            task.id === id ? { ...task, ...updates } : task,
+          ),
+        }));
+
+        void (async () => {
+          const supabase = getSupabaseClient();
+          if (!supabase) return;
+
+          const {
+            data: { user },
+          } = await supabase.auth.getUser();
+
+          if (!user) return;
+
+          const currentTask = get().tasks.find((task) => task.id === id);
+          if (!currentTask) return;
+
+          const { error } = await supabase
+            .from("tasks")
+            .update({
+              title: currentTask.title,
+              category: currentTask.category,
+              priority: currentTask.priority,
+              status: currentTask.status,
+              due_date: currentTask.dueDate,
+              notes: currentTask.notes ?? null,
+              checklist: currentTask.checklist ?? [],
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", id)
+            .eq("user_id", user.id);
+
+          if (error) {
+            console.error("Failed to update task in Supabase:", error);
+          }
+        })();
+      },
+
+      deleteTask: (id) => {
+        set((state) => ({
+          tasks: state.tasks.filter((task) => task.id !== id),
+        }));
+
+        void (async () => {
+          const supabase = getSupabaseClient();
+          if (!supabase) return;
+
+          const {
+            data: { user },
+          } = await supabase.auth.getUser();
+
+          if (!user) return;
+
+          const { error } = await supabase
+            .from("tasks")
+            .delete()
+            .eq("id", id)
+            .eq("user_id", user.id);
+
+          if (error) {
+            console.error("Failed to delete task from Supabase:", error);
+          }
+        })();
+      },
     }),
     { name: "growthos_tasks", storage },
   ),
 );
+
+let taskHydrationComplete = false;
+let taskHydrationPromise: Promise<void> | null = null;
+
+function hydrateTasksFromSupabase(): Promise<void> {
+  if (taskHydrationComplete) return Promise.resolve();
+  if (taskHydrationPromise) return taskHydrationPromise;
+
+  const supabase = getSupabaseClient();
+  if (!supabase) return Promise.resolve();
+
+  taskHydrationPromise = (async () => {
+    try {
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (userError) {
+        console.error("Failed to get the authenticated user for Tasks:", userError);
+        return;
+      }
+
+      if (!user) return;
+
+      const { data: cloudTasks, error: fetchError } = await supabase
+        .from("tasks")
+        .select("*")
+        .eq("user_id", user.id);
+
+      if (fetchError) {
+        console.error("Failed to load Tasks from Supabase:", fetchError);
+        return;
+      }
+
+      if (cloudTasks.length > 0) {
+        useTaskStore.setState({
+          tasks: cloudTasks.map((task) => taskFromSupabase(task as SupabaseTaskRow)),
+        });
+        taskHydrationComplete = true;
+        return;
+      }
+
+      const localTasks = useTaskStore.getState().tasks;
+      if (localTasks.length === 0) {
+        taskHydrationComplete = true;
+        return;
+      }
+
+      const { error: migrationError } = await supabase
+        .from("tasks")
+        .upsert(localTasks.map((task) => taskToSupabase(task, user.id)), {
+          onConflict: "id",
+        });
+
+      if (migrationError) {
+        console.error("Failed to migrate local Tasks to Supabase:", migrationError);
+        return;
+      }
+
+      const { data: migratedTasks, error: reloadError } = await supabase
+        .from("tasks")
+        .select("*")
+        .eq("user_id", user.id);
+
+      if (reloadError) {
+        console.error("Failed to reload migrated Tasks from Supabase:", reloadError);
+        return;
+      }
+
+      if (migratedTasks.length > 0) {
+        useTaskStore.setState({
+          tasks: migratedTasks.map((task) => taskFromSupabase(task as SupabaseTaskRow)),
+        });
+      }
+
+      taskHydrationComplete = true;
+    } catch (error) {
+      console.error("Failed to hydrate Tasks from Supabase:", error);
+    } finally {
+      taskHydrationPromise = null;
+    }
+  })();
+
+  return taskHydrationPromise;
+}
+
+if (typeof window !== "undefined") {
+  if (useTaskStore.persist.hasHydrated()) {
+    void hydrateTasksFromSupabase();
+  } else {
+    useTaskStore.persist.onFinishHydration(() => {
+      void hydrateTasksFromSupabase();
+    });
+  }
+}
 
 // Daily checklist store separate from tasks for clarity
 interface DailyChecklistItem {
