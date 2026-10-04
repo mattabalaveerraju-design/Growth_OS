@@ -38,6 +38,12 @@ export const Route = createFileRoute("/tasks")({
   component: TasksPage,
 });
 
+type TaskChecklistItem = {
+  id: string;
+  text: string;
+  completed: boolean;
+};
+
 type Task = {
   id: string;
   title: string;
@@ -51,9 +57,28 @@ type Task = {
   notes?: string;
   comments?: number;
   attachments?: number;
+  checklist?: TaskChecklistItem[];
 };
 
 const today = new Date().toISOString().slice(0, 10);
+
+const createChecklistItem = (text = ""): TaskChecklistItem => ({
+  id:
+    typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+      ? crypto.randomUUID()
+      : `check-${Math.random().toString(36).slice(2, 9)}`,
+  text,
+  completed: false,
+});
+
+const normalizeChecklist = (items: TaskChecklistItem[] = []) =>
+  items
+    .map((item) => ({
+      ...item,
+      text: item.text.trim(),
+      completed: Boolean(item.completed),
+    }))
+    .filter((item) => item.text.length > 0);
 
 const emptyTaskForm = {
   title: "",
@@ -63,7 +88,7 @@ const emptyTaskForm = {
   dueDate: today,
   status: "Todo" as Task["status"],
   repeat: "Never",
-  checklist: false,
+  checklist: [] as TaskChecklistItem[],
   notes: "",
 };
 
@@ -85,7 +110,29 @@ function TasksPage() {
   useDailyChecklistStore((s) => s.resetIfNeeded)();
 
   const [taskDialogOpen, setTaskDialogOpen] = useState(false);
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [taskForm, setTaskForm] = useState(emptyTaskForm);
+
+  const openTaskDialog = (task?: TaskItem) => {
+    const notes = task?.notes ?? "";
+    const noteParts = notes.split(/\n\n/);
+    const description = noteParts[0] ?? "";
+    const notesText = noteParts.slice(1).join("\n\n");
+
+    setEditingTaskId(task?.id ?? null);
+    setTaskForm({
+      title: task?.title ?? "",
+      description: description,
+      priority: task?.priority ?? "Medium",
+      category: task?.category ?? "General",
+      dueDate: task?.dueDate ?? today,
+      status: task?.status ?? "Todo",
+      repeat: "Never",
+      checklist: normalizeChecklist((task?.checklist as TaskChecklistItem[]) ?? []),
+      notes: notesText,
+    });
+    setTaskDialogOpen(true);
+  };
 
   const cols = [
     {
@@ -114,10 +161,11 @@ function TasksPage() {
     },
   ];
 
-  const handleCreateTask = () => {
+  const handleSaveTask = () => {
     if (!taskForm.title.trim()) return;
 
-    addTask({
+    const nextChecklist = normalizeChecklist(taskForm.checklist);
+    const payload = {
       title: taskForm.title.trim(),
       category: taskForm.category.trim() || "General",
       priority: taskForm.priority,
@@ -125,8 +173,16 @@ function TasksPage() {
       dueDate: taskForm.dueDate || today,
       notes:
         [taskForm.description.trim(), taskForm.notes.trim()].filter(Boolean).join("\n\n") || "",
-    });
+      checklist: nextChecklist,
+    };
 
+    if (editingTaskId) {
+      updateTask(editingTaskId, payload);
+    } else {
+      addTask(payload);
+    }
+
+    setEditingTaskId(null);
     setTaskDialogOpen(false);
     setTaskForm(emptyTaskForm);
   };
@@ -151,7 +207,7 @@ function TasksPage() {
             <Pill icon={<ListFilter className="h-3.5 w-3.5" />}>Priority</Pill>
 
             <button
-              onClick={() => setTaskDialogOpen(true)}
+              onClick={() => openTaskDialog()}
               className="inline-flex h-9 items-center justify-center gap-1.5 rounded-[10px] bg-primary px-3.5 text-[13px] font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 ml-auto max-sm:w-full max-sm:ml-0"
             >
               <Plus className="h-4 w-4" />
@@ -184,22 +240,14 @@ function TasksPage() {
                   <TaskCard
                     key={t.id}
                     task={t}
-                    onEdit={() => {
-                      const newTitle = window.prompt("Edit title", t.title)?.trim();
-                      if (!newTitle) return;
-                      const newStatus = window.prompt(
-                        "Status: Todo, In Progress, Done, Blocked",
-                        t.status,
-                      ) as Task["status"];
-                      updateTask(t.id, { title: newTitle, status: newStatus });
-                    }}
+                    onEdit={() => openTaskDialog(t)}
                     onDelete={() => {
                       if (window.confirm("Delete this task?")) deleteTask(t.id);
                     }}
                   />
                 ))}
                 <button
-                  onClick={() => setTaskDialogOpen(true)}
+                  onClick={() => openTaskDialog()}
                   className="w-full mt-2 rounded-[14px] border border-dashed border-border text-[12.5px] text-ink-soft/70 py-2.5 hover:bg-accent/30 hover:text-ink-soft transition-colors inline-flex items-center justify-center gap-1.5"
                 >
                   <Plus className="h-3.5 w-3.5" /> Add Task
@@ -210,12 +258,21 @@ function TasksPage() {
         </div>
       </div>
 
-      <Dialog open={taskDialogOpen} onOpenChange={setTaskDialogOpen}>
+      <Dialog
+        open={taskDialogOpen}
+        onOpenChange={(isOpen) => {
+          setTaskDialogOpen(isOpen);
+          if (!isOpen) {
+            setEditingTaskId(null);
+            setTaskForm(emptyTaskForm);
+          }
+        }}
+      >
         <DialogContent className="max-w-[720px] w-[95vw] sm:w-[90vw] max-h-[90vh] overflow-hidden p-0 sm:rounded-[24px]">
           <div className="flex max-h-[90vh] flex-col">
             <DialogHeader className="border-b border-border px-6 py-5">
               <DialogTitle className="text-[20px] font-semibold tracking-[-0.02em]">
-                Add Task
+                {editingTaskId ? "Edit Task" : "Add Task"}
               </DialogTitle>
             </DialogHeader>
 
@@ -224,10 +281,11 @@ function TasksPage() {
                 <div className="space-y-4">
                   <div>
                     <label className="text-[12px] font-medium text-ink-soft">Task Title</label>
-                    <DateControl
+                    <Input
+                      type="text"
                       className="mt-2"
                       value={taskForm.title}
-                      placeholder="Task title"
+                      placeholder="What needs to be done?"
                       onChange={(event) =>
                         setTaskForm((current) => ({ ...current, title: event.target.value }))
                       }
@@ -336,14 +394,78 @@ function TasksPage() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="flex items-center gap-3 rounded-[12px] border border-border/70 bg-muted/40 px-3 py-3">
-                    <Checkbox
-                      checked={taskForm.checklist}
-                      onCheckedChange={(checked) =>
-                        setTaskForm((current) => ({ ...current, checklist: checked === true }))
-                      }
-                    />
+                  <div></div>
+                </div>
+
+                <div className="rounded-[14px] border border-border/70 bg-muted/30 p-3">
+                  <div className="flex items-center justify-between gap-3">
                     <label className="text-[12px] font-medium text-ink-soft">Checklist</label>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setTaskForm((current) => ({
+                          ...current,
+                          checklist: [...current.checklist, createChecklistItem("")],
+                        }))
+                      }
+                      className="text-[12px] font-medium text-primary hover:text-primary/80"
+                    >
+                      + Add checklist item
+                    </button>
+                  </div>
+
+                  <div className="mt-3 space-y-2">
+                    {taskForm.checklist.length ? (
+                      taskForm.checklist.map((item, index) => (
+                        <div key={item.id} className="flex items-center gap-2">
+                          <Checkbox
+                            checked={item.completed}
+                            onCheckedChange={(checked) =>
+                              setTaskForm((current) => ({
+                                ...current,
+                                checklist: current.checklist.map((entry) =>
+                                  entry.id === item.id
+                                    ? { ...entry, completed: checked === true }
+                                    : entry,
+                                ),
+                              }))
+                            }
+                          />
+                          <Input
+                            value={item.text}
+                            onChange={(event) =>
+                              setTaskForm((current) => ({
+                                ...current,
+                                checklist: current.checklist.map((entry) =>
+                                  entry.id === item.id
+                                    ? { ...entry, text: event.target.value }
+                                    : entry,
+                                ),
+                              }))
+                            }
+                            placeholder={`Checklist item ${index + 1}`}
+                            className="flex-1"
+                          />
+                          <button
+                            type="button"
+                            aria-label={`Remove checklist item ${index + 1}`}
+                            onClick={() =>
+                              setTaskForm((current) => ({
+                                ...current,
+                                checklist: current.checklist.filter(
+                                  (entry) => entry.id !== item.id,
+                                ),
+                              }))
+                            }
+                            className="rounded-full p-1.5 text-ink-soft hover:bg-muted"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-[12px] text-ink-soft">No checklist items yet.</p>
+                    )}
                   </div>
                 </div>
 
@@ -362,11 +484,19 @@ function TasksPage() {
             </div>
 
             <DialogFooter className="border-t border-border px-6 py-4">
-              <Button variant="outline" onClick={() => setTaskDialogOpen(false)} type="button">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setTaskDialogOpen(false);
+                  setEditingTaskId(null);
+                  setTaskForm(emptyTaskForm);
+                }}
+                type="button"
+              >
                 Cancel
               </Button>
-              <Button onClick={handleCreateTask} type="button">
-                Create Task
+              <Button onClick={handleSaveTask} type="button">
+                {editingTaskId ? "Save Changes" : "Create Task"}
               </Button>
             </DialogFooter>
           </div>
@@ -395,15 +525,23 @@ function TaskCard({
   onDelete?: () => void;
 }) {
   return (
-    <div className="group rounded-[14px] bg-surface-elevated border border-border p-3 cursor-grab hover:shadow-[var(--shadow-soft)] hover:-translate-y-0.5 transition-all">
-      <div className="absolute right-2 top-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+    <div className="group relative rounded-[14px] bg-surface-elevated border border-border p-3 cursor-grab hover:shadow-[var(--shadow-soft)] hover:-translate-y-0.5 transition-all">
+      <div className="absolute right-2 top-2 flex items-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
         {onEdit && (
-          <button onClick={onEdit} className="p-1 rounded hover:bg-accent/20">
+          <button
+            onClick={onEdit}
+            className="p-1 rounded hover:bg-accent/20"
+            aria-label={`Edit ${task.title}`}
+          >
             <Edit2 className="h-4 w-4" />
           </button>
         )}
         {onDelete && (
-          <button onClick={onDelete} className="p-1 rounded hover:bg-accent/20">
+          <button
+            onClick={onDelete}
+            className="p-1 rounded hover:bg-accent/20"
+            aria-label={`Delete ${task.title}`}
+          >
             <Trash2 className="h-4 w-4" />
           </button>
         )}

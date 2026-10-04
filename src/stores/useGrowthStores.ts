@@ -12,6 +12,12 @@ export type ApplicationStatus =
   | "Offer"
   | "Rejected";
 
+export interface ChecklistItem {
+  id: string;
+  text: string;
+  completed: boolean;
+}
+
 export interface TaskItem {
   id: string;
   title: string;
@@ -20,6 +26,7 @@ export interface TaskItem {
   status: TaskStatus;
   dueDate: string;
   notes?: string;
+  checklist?: ChecklistItem[];
 }
 
 export interface LearningItem {
@@ -137,6 +144,7 @@ export interface FocusItem {
   priority: Priority;
   description: string;
   order: number;
+  checklist?: ChecklistItem[];
 }
 
 export interface GoalItem {
@@ -244,9 +252,14 @@ interface ReadingState {
 
 interface ExerciseState {
   exercise: ExerciseEntry[];
+  exerciseProgress: Record<string, ChecklistItem[]>;
+  exerciseWorkouts: Record<string, string>;
   addExercise: (entry: Omit<ExerciseEntry, "id">) => void;
   updateExercise: (id: string, updates: Partial<ExerciseEntry>) => void;
   deleteExercise: (id: string) => void;
+  setExerciseProgress: (dateKey: string, checklist: ChecklistItem[]) => void;
+  setExerciseWorkout: (dateKey: string, workout: string) => void;
+  toggleExerciseProgress: (dateKey: string, itemId: string) => void;
 }
 
 interface FreelanceState {
@@ -462,6 +475,8 @@ export const useExerciseStore = create<ExerciseState>()(
   persist(
     (set) => ({
       exercise: [],
+      exerciseProgress: {},
+      exerciseWorkouts: {},
       addExercise: (entry) =>
         set((state) => ({ exercise: [...state.exercise, { id: createId(), ...entry }] })),
       updateExercise: (id, updates) =>
@@ -472,6 +487,29 @@ export const useExerciseStore = create<ExerciseState>()(
         })),
       deleteExercise: (id) =>
         set((state) => ({ exercise: state.exercise.filter((entry) => entry.id !== id) })),
+      setExerciseProgress: (dateKey, checklist) =>
+        set((state) => ({
+          exerciseProgress: {
+            ...state.exerciseProgress,
+            [dateKey]: checklist,
+          },
+        })),
+      setExerciseWorkout: (dateKey, workout) =>
+        set((state) => ({
+          exerciseWorkouts: {
+            ...state.exerciseWorkouts,
+            [dateKey]: workout,
+          },
+        })),
+      toggleExerciseProgress: (dateKey, itemId) =>
+        set((state) => ({
+          exerciseProgress: {
+            ...state.exerciseProgress,
+            [dateKey]: (state.exerciseProgress[dateKey] ?? []).map((item) =>
+              item.id === itemId ? { ...item, completed: !item.completed } : item,
+            ),
+          },
+        })),
     }),
     { name: "growthos_exercise", storage },
   ),
@@ -509,15 +547,14 @@ export const useFocusStore = create<FocusState>()(
         })),
       updateFocusItem: (id, updates) =>
         set((state) => ({
-          focusItems: state.focusItems.map((item) => {
-            if (item.id !== id) return item;
-            const updated: any = { ...item, ...updates };
-            if (Object.prototype.hasOwnProperty.call(updates, "description")) {
-              // remove legacy notes property if description is now provided
-              delete updated.notes;
-            }
-            return updated;
-          }),
+          focusItems: state.focusItems.map((item) =>
+            item.id === id
+              ? {
+                  ...item,
+                  ...updates,
+                }
+              : item,
+          ),
         })),
       deleteFocusItem: (id) =>
         set((state) => ({

@@ -134,7 +134,9 @@ function Home() {
           </div>
         </div>
 
-        <footer className="pt-8 text-center text-[12px] text-ink-soft/60">GrowthOS · Your second brain</footer>
+        <footer className="pt-8 text-center text-[12px] text-ink-soft/60">
+          GrowthOS · Your second brain
+        </footer>
       </div>
     </AppShell>
   );
@@ -227,11 +229,9 @@ function TodayFocus() {
               <span>Priority: {item.priority}</span>
               <span>
                 {(item.description ?? (item as any).notes)
-                  ? `${(item.description ?? (item as any).notes).slice(0, 30)}${(
-                      (item.description ?? (item as any).notes) as string
-                    ).length > 30
-                    ? "…"
-                    : ""}`
+                  ? `${(item.description ?? (item as any).notes).slice(0, 30)}${
+                      ((item.description ?? (item as any).notes) as string).length > 30 ? "…" : ""
+                    }`
                   : "No description"}
               </span>
             </div>
@@ -410,7 +410,8 @@ function LearningProgress() {
           </div>
           <div className="mt-4 flex items-center gap-3 text-[12px] text-ink-soft">
             <span className="inline-flex items-center gap-1.5">
-              <CircleDot className="h-3 w-3 text-[var(--cmd-learning-accent)]" /> {learning.length} topics tracked
+              <CircleDot className="h-3 w-3 text-[var(--cmd-learning-accent)]" /> {learning.length}{" "}
+              topics tracked
             </span>
           </div>
         </div>
@@ -423,7 +424,10 @@ function LearningProgress() {
           <p className="mt-2 max-w-[240px] text-[13px] leading-5 text-ink-soft">
             Start learning something new and build your skills.
           </p>
-          <Link to="/learning" className="mt-4 inline-flex items-center gap-1 text-[13px] font-medium text-[var(--cmd-learning-accent)]">
+          <Link
+            to="/learning"
+            className="mt-4 inline-flex items-center gap-1 text-[13px] font-medium text-[var(--cmd-learning-accent)]"
+          >
             Go to Learning <ChevronRight className="h-4 w-4" />
           </Link>
         </div>
@@ -580,7 +584,8 @@ function DashboardHeader({ totalHours }: { totalHours: number }) {
         const client = mod.getSupabaseClient();
         if (client && client.auth && typeof client.auth.getUser === "function") {
           const res = await client.auth.getUser();
-          if (res?.data?.user?.user_metadata?.full_name) setName(res.data.user.user_metadata.full_name);
+          if (res?.data?.user?.user_metadata?.full_name)
+            setName(res.data.user.user_metadata.full_name);
           else if (res?.data?.user?.email) setName(res.data.user.email.split("@")[0]);
         }
       } catch (e) {
@@ -600,14 +605,18 @@ function DashboardHeader({ totalHours }: { totalHours: number }) {
     >
       <div className="min-w-0">
         <h1 className="font-display text-[28px] font-semibold tracking-[-0.04em] text-ink sm:text-[30px]">
-          {greet}{name ? `, ${name}` : ""} 👋
+          {greet}
+          {name ? `, ${name}` : ""} 👋
         </h1>
         <p className="mt-1 text-[14px] text-ink-soft">Small steps every day create big results.</p>
       </div>
 
       <div className="flex items-center gap-3 self-start lg:self-auto">
         <div className="hidden rounded-full border border-border bg-muted/50 px-3 py-1.5 text-[12px] font-medium text-ink-soft sm:block">
-          <HydratedDate value={new Date()} options={{ weekday: "long", month: "long", day: "numeric" }} />
+          <HydratedDate
+            value={new Date()}
+            options={{ weekday: "long", month: "long", day: "numeric" }}
+          />
         </div>
 
         <button
@@ -719,7 +728,9 @@ function SummaryMetrics({ focusItems, applications, learning }: any) {
               </div>
 
               <div className="mt-6">
-                <div className="text-[30px] font-semibold tracking-[-0.05em] text-ink">{card.metric}</div>
+                <div className="text-[30px] font-semibold tracking-[-0.05em] text-ink">
+                  {card.metric}
+                </div>
                 <div className="mt-1 text-[13px] text-ink-soft">{card.meta}</div>
               </div>
 
@@ -806,7 +817,10 @@ function TodaySchedule({ focusItems }: { focusItems: any[] }) {
           ))}
 
           <div className="pt-1">
-            <Link to="/calendar" className="inline-flex items-center gap-1 text-[13px] font-medium text-primary">
+            <Link
+              to="/calendar"
+              className="inline-flex items-center gap-1 text-[13px] font-medium text-primary"
+            >
               View full calendar <ChevronRight className="h-4 w-4" />
             </Link>
           </div>
@@ -870,7 +884,9 @@ function QuickStats({ learning, applications, reading }: any) {
 }
 
 function JobTrackerPreview({ applications }: { applications: any[] }) {
-  const recent = [...applications].sort((a, b) => new Date(b.appliedDate).getTime() - new Date(a.appliedDate).getTime()).slice(0, 4);
+  const recent = [...applications]
+    .sort((a, b) => new Date(b.appliedDate).getTime() - new Date(a.appliedDate).getTime())
+    .slice(0, 4);
 
   return (
     <motion.div
@@ -890,7 +906,11 @@ function JobTrackerPreview({ applications }: { applications: any[] }) {
       {recent.length ? (
         <div className="mt-5 space-y-2 text-sm">
           {recent.map((a) => (
-            <Link key={a.id} to={`/jobs`} className="flex items-center justify-between rounded-[14px] p-2 transition-colors hover:bg-white">
+            <Link
+              key={a.id}
+              to={`/jobs`}
+              className="flex items-center justify-between rounded-[14px] p-2 transition-colors hover:bg-white"
+            >
               <div className="min-w-0">
                 <div className="truncate text-[14px] font-medium text-ink">{a.company}</div>
                 <div className="mt-0.5 text-[12px] text-ink-soft">{a.position}</div>
@@ -901,7 +921,10 @@ function JobTrackerPreview({ applications }: { applications: any[] }) {
             </Link>
           ))}
           <div className="pt-2">
-            <Link to="/jobs" className="inline-flex items-center gap-1 text-[13px] font-medium text-primary">
+            <Link
+              to="/jobs"
+              className="inline-flex items-center gap-1 text-[13px] font-medium text-primary"
+            >
               View Jobs <ChevronRight className="h-4 w-4" />
             </Link>
           </div>
@@ -915,7 +938,10 @@ function JobTrackerPreview({ applications }: { applications: any[] }) {
           <p className="mt-2 max-w-[220px] text-[13px] leading-5 text-ink-soft">
             Track your applications and move closer to your goals.
           </p>
-          <Link to="/jobs" className="mt-4 inline-flex items-center gap-1 text-[13px] font-medium text-[var(--cmd-jobs-accent)]">
+          <Link
+            to="/jobs"
+            className="mt-4 inline-flex items-center gap-1 text-[13px] font-medium text-[var(--cmd-jobs-accent)]"
+          >
             View Jobs <ChevronRight className="h-4 w-4" />
           </Link>
         </div>
@@ -926,9 +952,19 @@ function JobTrackerPreview({ applications }: { applications: any[] }) {
 
 function RecentActivity({ learning, applications, reading }: any) {
   const events: { id: string; title: string; date?: string }[] = [];
-  learning.forEach((l: any) => events.push({ id: `l-${l.id}`, title: `Added learning: ${l.topic}`, date: l.date }));
-  applications.forEach((a: any) => events.push({ id: `a-${a.id}`, title: `Updated application: ${a.company}`, date: a.appliedDate }));
-  reading.forEach((r: any) => events.push({ id: `r-${r.id}`, title: `Reading: ${r.book}`, date: r.date }));
+  learning.forEach((l: any) =>
+    events.push({ id: `l-${l.id}`, title: `Added learning: ${l.topic}`, date: l.date }),
+  );
+  applications.forEach((a: any) =>
+    events.push({
+      id: `a-${a.id}`,
+      title: `Updated application: ${a.company}`,
+      date: a.appliedDate,
+    }),
+  );
+  reading.forEach((r: any) =>
+    events.push({ id: `r-${r.id}`, title: `Reading: ${r.book}`, date: r.date }),
+  );
 
   const sorted = events
     .filter((e) => e.date)
@@ -979,6 +1015,7 @@ function RecentActivity({ learning, applications, reading }: any) {
 function CommandTodayFocus() {
   const focusItemsRaw = useFocusStore((state) => state.focusItems);
   const toggle = useFocusStore((s) => s.toggleFocusComplete);
+  const updateFocusItem = useFocusStore((s) => s.updateFocusItem);
   const deleteFocus = useFocusStore((s) => s.deleteFocusItem);
   const items = [...focusItemsRaw].sort((a, b) => a.order - b.order);
   const completed = items.filter((i) => i.status === "Completed").length;
@@ -995,7 +1032,9 @@ function CommandTodayFocus() {
           <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-soft/70">
             Today's Focus
           </div>
-          <div className="mt-1 text-[14px] text-ink-soft">{completed} / {items.length} completed</div>
+          <div className="mt-1 text-[14px] text-ink-soft">
+            {completed} / {items.length} completed
+          </div>
         </div>
         <Link
           to="/focus"
@@ -1043,6 +1082,47 @@ function CommandTodayFocus() {
               {it.description && (
                 <p className="mt-3 text-[13px] leading-5 text-ink-soft">{it.description}</p>
               )}
+
+              {it.checklist && it.checklist.length > 0 ? (
+                <div className="mt-4 border-t border-border pt-3">
+                  <div className="mb-2 flex items-center justify-between text-[11px] text-ink-soft">
+                    <span className="font-semibold uppercase tracking-[0.12em]">Checklist</span>
+                    <span>
+                      {it.checklist.filter((checkItem) => checkItem.completed).length} /{" "}
+                      {it.checklist.length} completed
+                    </span>
+                  </div>
+                  <div className="space-y-1">
+                    {it.checklist.map((checkItem) => (
+                      <label
+                        key={checkItem.id}
+                        className="grid min-w-0 grid-cols-[20px_minmax(0,1fr)] items-center gap-2 rounded-[10px] px-1 py-1.5 text-[13px]"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checkItem.completed}
+                          onChange={() =>
+                            updateFocusItem(it.id, {
+                              checklist: (it.checklist ?? []).map((entry) =>
+                                entry.id === checkItem.id
+                                  ? { ...entry, completed: !entry.completed }
+                                  : entry,
+                              ),
+                            })
+                          }
+                          className="h-4 w-4 accent-primary"
+                          aria-label={`Mark ${checkItem.text} ${checkItem.completed ? "incomplete" : "complete"}`}
+                        />
+                        <span
+                          className={`min-w-0 break-words ${checkItem.completed ? "text-ink-soft line-through" : "text-ink"}`}
+                        >
+                          {checkItem.text}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
             </div>
           ))
         ) : (
@@ -1054,7 +1134,10 @@ function CommandTodayFocus() {
             <p className="mt-2 max-w-[260px] text-[13px] leading-5 text-ink-soft">
               There is currently nothing planned, but you can start whenever you're ready.
             </p>
-            <Link to="/focus" className="mt-4 inline-flex items-center gap-1 text-[13px] font-medium text-primary">
+            <Link
+              to="/focus"
+              className="mt-4 inline-flex items-center gap-1 text-[13px] font-medium text-primary"
+            >
               + Add focus
             </Link>
           </div>

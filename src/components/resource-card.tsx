@@ -58,7 +58,7 @@ export function ResourceCard({ item, onOpen, onFavorite, onEdit, onDelete }: Res
                 event.stopPropagation();
                 onEdit(item);
               }}
-              className="rounded-full p-1.5 text-ink-soft opacity-0 transition hover:bg-muted group-hover:opacity-100 focus-visible:opacity-100"
+              className="rounded-full p-1.5 text-ink-soft opacity-100 transition hover:bg-muted md:opacity-0 md:group-hover:opacity-100 focus-visible:opacity-100"
             >
               <Pencil className="h-4 w-4" />
             </button>
@@ -71,7 +71,7 @@ export function ResourceCard({ item, onOpen, onFavorite, onEdit, onDelete }: Res
                 event.stopPropagation();
                 onDelete(item);
               }}
-              className="rounded-full p-1.5 text-destructive opacity-0 transition hover:bg-destructive/10 group-hover:opacity-100 focus-visible:opacity-100"
+              className="rounded-full p-1.5 text-destructive opacity-100 transition hover:bg-destructive/10 md:opacity-0 md:group-hover:opacity-100 focus-visible:opacity-100"
             >
               <Trash2 className="h-4 w-4" />
             </button>
