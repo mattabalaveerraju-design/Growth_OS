@@ -51,6 +51,10 @@ import {
 
 export const Route = createFileRoute("/learning")({
   head: () => ({ meta: [{ title: "Learning — GrowthOS" }] }),
+  validateSearch: (search: Record<string, unknown>) => ({
+    edit: typeof search.edit === "string" ? search.edit : undefined,
+    add: search.add === true || search.add === "true",
+  }),
   component: LearningPage,
 });
 
@@ -81,6 +85,7 @@ const mapCloudCardToLearning = (card: CloudCardRecord): LearningItem => {
 
 function LearningPage() {
   const navigate = useNavigate();
+  const { edit: requestedEditId, add: requestedAdd } = Route.useSearch();
   const learning = useLearningStore((state) => state.learning);
   const addLearning = useLearningStore((state) => state.addLearning);
   const updateLearning = useLearningStore((state) => state.updateLearning);
@@ -105,6 +110,7 @@ function LearningPage() {
     date: new Date().toISOString().slice(0, 10),
   });
   const [cloudEnabled, setCloudEnabled] = useState(hasSupabaseConfig);
+  const [cloudItemsLoaded, setCloudItemsLoaded] = useState(!hasSupabaseConfig);
   const [cloudItems, setCloudItems] = useState<CloudCardRecord[]>([]);
   const [cloudStatus, setCloudStatus] = useState(
     hasSupabaseConfig ? "Cloud sync ready" : "Cloud sync not configured",
@@ -127,6 +133,7 @@ function LearningPage() {
       const cards = await listCloudCards("learning");
       if (!active) return;
       setCloudItems(cards);
+      setCloudItemsLoaded(true);
       useLearningStore.setState({ learning: cards.map(mapCloudCardToLearning) });
       setCloudStatus(cards.length ? "Cloud sync ready" : "Cloud sync ready — add your first card");
     };
@@ -268,6 +275,20 @@ function LearningPage() {
     });
     setDialogOpen(true);
   };
+
+  useEffect(() => {
+    if (requestedAdd) {
+      openNew();
+      void navigate({ to: "/learning", search: {}, replace: true });
+      return;
+    }
+
+    if (!requestedEditId || !cloudItemsLoaded) return;
+
+    const item = visibleLearning.find((candidate) => candidate.id === requestedEditId);
+    if (item) openEdit(item);
+    void navigate({ to: "/learning", search: {}, replace: true });
+  }, [cloudItemsLoaded, navigate, openEdit, openNew, requestedAdd, requestedEditId, visibleLearning]);
 
   const handleSave = async () => {
     if (isSaving) return;
@@ -447,6 +468,7 @@ function LearningPage() {
             {filteredLearning.length ? (
               <ResourceGrid
                 items={filteredLearning}
+                alwaysShowEditActions
                 onOpen={(item) => navigate({ to: "/learning/$id", params: { id: item.id } })}
                 onFavorite={handleFavoriteToggle}
                 onEdit={(item) => {

@@ -8,9 +8,17 @@ interface ResourceGridProps {
   onFavorite?: (item: ResourceItem) => void;
   onEdit?: (item: ResourceItem) => void;
   onDelete?: (item: ResourceItem) => void;
+  alwaysShowEditActions?: boolean;
 }
 
-export function ResourceGrid({ items, onOpen, onFavorite, onEdit, onDelete }: ResourceGridProps) {
+export function ResourceGrid({
+  items,
+  onOpen,
+  onFavorite,
+  onEdit,
+  onDelete,
+  alwaysShowEditActions = false,
+}: ResourceGridProps) {
   if (!items.length) {
     return (
       <EmptyState
@@ -30,6 +38,7 @@ export function ResourceGrid({ items, onOpen, onFavorite, onEdit, onDelete }: Re
           onFavorite={onFavorite}
           onEdit={onEdit}
           onDelete={onDelete}
+          alwaysShowEditAction={alwaysShowEditActions}
         />
       ))}
     </div>

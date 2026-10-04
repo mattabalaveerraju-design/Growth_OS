@@ -161,12 +161,12 @@ export function ImportCenterDialog({
     }
   };
 
-  const handleImport = () => {
+  const handleImport = async () => {
     let imported = 0;
     let skipped = 0;
     const newErrors: string[] = [];
 
-    previewRows.forEach((row, index) => {
+    for (const [index, row] of previewRows.entries()) {
       try {
         switch (module) {
           case "Learning": {
@@ -236,12 +236,13 @@ export function ImportCenterDialog({
           case "Exercise": {
             const exercise = String(getValue(row, "Exercise") ?? "").trim();
             if (!exercise) throw new Error(`Missing exercise on row ${index + 1}`);
-            addExercise({
+            const saved = await addExercise({
               exercise,
               durationMinutes: Math.round((parseDuration(getValue(row, "Duration")) || 0) * 60),
               calories: Number(getValue(row, "Calories") ?? 0) || 0,
               date: normalizeDate(getValue(row, "Date")),
             });
+            if (!saved) throw new Error(`Could not save exercise on row ${index + 1}`);
             imported += 1;
             break;
           }
@@ -252,7 +253,7 @@ export function ImportCenterDialog({
         skipped += 1;
         newErrors.push(String(error));
       }
-    });
+    }
 
     setImportedCount(imported);
     setSkippedCount(skipped);

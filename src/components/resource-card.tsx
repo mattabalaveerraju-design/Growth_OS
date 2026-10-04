@@ -7,9 +7,17 @@ interface ResourceCardProps {
   onFavorite?: (item: ResourceItem) => void;
   onEdit?: (item: ResourceItem) => void;
   onDelete?: (item: ResourceItem) => void;
+  alwaysShowEditAction?: boolean;
 }
 
-export function ResourceCard({ item, onOpen, onFavorite, onEdit, onDelete }: ResourceCardProps) {
+export function ResourceCard({
+  item,
+  onOpen,
+  onFavorite,
+  onEdit,
+  onDelete,
+  alwaysShowEditAction = false,
+}: ResourceCardProps) {
   const icon =
     item.category === "pdf" || item.filename?.toLowerCase().includes("pdf") ? FileText : BookOpen;
   const Icon = icon;
@@ -58,7 +66,9 @@ export function ResourceCard({ item, onOpen, onFavorite, onEdit, onDelete }: Res
                 event.stopPropagation();
                 onEdit(item);
               }}
-              className="rounded-full p-1.5 text-ink-soft opacity-100 transition hover:bg-muted md:opacity-0 md:group-hover:opacity-100 focus-visible:opacity-100"
+              className={`rounded-full p-1.5 text-ink-soft transition hover:bg-muted focus-visible:opacity-100 ${
+                alwaysShowEditAction ? "opacity-100" : "opacity-100 md:opacity-0 md:group-hover:opacity-100"
+              }`}
             >
               <Pencil className="h-4 w-4" />
             </button>

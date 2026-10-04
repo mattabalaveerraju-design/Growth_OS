@@ -246,13 +246,22 @@ function LearningDetailPage() {
   return (
     <AppShell title={item.title}>
       <div className="space-y-6">
-        <button
-          type="button"
-          onClick={() => navigate({ to: "/learning" })}
-          className="inline-flex items-center gap-2 text-sm text-ink-soft"
-        >
-          <ArrowLeft className="h-4 w-4" /> Back to learning
-        </button>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <button
+            type="button"
+            onClick={() => navigate({ to: "/learning" })}
+            className="inline-flex items-center gap-2 text-sm text-ink-soft"
+          >
+            <ArrowLeft className="h-4 w-4" /> Back to learning
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate({ to: "/learning", search: { add: true } })}
+            className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-[10px] bg-primary text-primary-foreground text-[13px] font-medium shadow-sm hover:bg-primary/90 transition-colors"
+          >
+            Add Learning
+          </button>
+        </div>
         <ResourceDetail
           item={item}
           files={files}
@@ -262,6 +271,7 @@ function LearningDetailPage() {
           onPreviewFile={handlePreviewFile}
           onRenameFile={handleRenameFile}
           onReplaceFile={handleReplaceFile}
+          onEdit={() => navigate({ to: "/learning", search: { edit: id } })}
         />
         {previewFile ? (
           <div className="rounded-[24px] border border-border/70 bg-card/80 p-4 shadow-sm">

@@ -295,12 +295,17 @@ interface ExerciseState {
   exercise: ExerciseEntry[];
   exerciseProgress: Record<string, ChecklistItem[]>;
   exerciseWorkouts: Record<string, string>;
-  addExercise: (entry: Omit<ExerciseEntry, "id">) => void;
-  updateExercise: (id: string, updates: Partial<ExerciseEntry>) => void;
-  deleteExercise: (id: string) => void;
-  setExerciseProgress: (dateKey: string, checklist: ChecklistItem[]) => void;
-  setExerciseWorkout: (dateKey: string, workout: string) => void;
-  toggleExerciseProgress: (dateKey: string, itemId: string) => void;
+  addExercise: (entry: Omit<ExerciseEntry, "id">) => Promise<boolean>;
+  updateExercise: (id: string, updates: Partial<ExerciseEntry>) => Promise<boolean>;
+  deleteExercise: (id: string) => Promise<boolean>;
+  saveExerciseDay: (
+    dateKey: string,
+    workout: string,
+    checklist: ChecklistItem[],
+  ) => Promise<boolean>;
+  setExerciseProgress: (dateKey: string, checklist: ChecklistItem[]) => Promise<boolean>;
+  setExerciseWorkout: (dateKey: string, workout: string) => Promise<boolean>;
+  toggleExerciseProgress: (dateKey: string, itemId: string) => Promise<boolean>;
 }
 
 interface FreelanceState {
@@ -775,45 +780,407 @@ export const useReadingStore = create<ReadingState>()(
   ),
 );
 
+interface ExerciseEntryRow {
+  id: string;
+  user_id: string;
+  exercise: string;
+  duration_minutes: number;
+  calories: number;
+  date: string;
+}
+
+interface ExerciseDayRow {
+  id: string;
+  user_id: string;
+  date: string;
+  workout_name: string;
+  checklist: ChecklistItem[] | null;
+}
+
+type ExerciseSupabaseClient = NonNullable<ReturnType<typeof getSupabaseClient>>;
+
+let exerciseWriteQueue: Promise<void> = Promise.resolve();
+let exerciseHydrationPromise: Promise<void> | null = null;
+let exerciseHydratedUserId: string | null = null;
+
+function queueExerciseWrite<T>(operation: () => Promise<T>): Promise<T> {
+  const result = exerciseWriteQueue.then(operation, operation);
+  exerciseWriteQueue = result.then(
+    () => undefined,
+    () => undefined,
+  );
+  return result;
+}
+
+function exerciseEntryToRow(entry: ExerciseEntry, userId: string) {
+  return {
+    id: entry.id,
+    user_id: userId,
+    exercise: entry.exercise,
+    duration_minutes: entry.durationMinutes,
+    calories: entry.calories,
+    date: entry.date,
+    updated_at: new Date().toISOString(),
+  };
+}
+
+function exerciseEntryFromRow(row: ExerciseEntryRow): ExerciseEntry {
+  return {
+    id: row.id,
+    exercise: row.exercise,
+    durationMinutes: row.duration_minutes,
+    calories: row.calories,
+    date: row.date,
+  };
+}
+
+async function stableExerciseDayId(userId: string, dateKey: string) {
+  const cryptoApi = globalThis.crypto;
+  if (!cryptoApi?.subtle) {
+    throw new Error("Secure UUID generation is unavailable in this browser.");
+  }
+
+  const digest = new Uint8Array(
+    await cryptoApi.subtle.digest(
+      "SHA-256",
+      new TextEncoder().encode(`growthos-exercise-day:${userId}:${dateKey}`),
+    ),
+  );
+  const bytes = digest.slice(0, 16);
+  bytes[6] = (bytes[6] & 0x0f) | 0x80;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  const hex = Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
+
+async function getExerciseAuthContext() {
+  const client = getSupabaseClient();
+  if (!client) return { client: null, userId: null };
+
+  try {
+    const {
+      data: { user },
+      error,
+    } = await client.auth.getUser();
+    if (error || !user) {
+      if (error) console.error("Failed to get the authenticated user for Exercise:", error);
+      return { client, userId: null };
+    }
+    return { client, userId: user.id };
+  } catch (error) {
+    console.error("Failed to get the authenticated user for Exercise:", error);
+    return { client, userId: null };
+  }
+}
+
+async function upsertExerciseEntries(
+  client: ExerciseSupabaseClient,
+  userId: string,
+  entries: ExerciseEntry[],
+) {
+  if (!entries.length) return true;
+  try {
+    const { error } = await client
+      .from("exercise_entries")
+      .upsert(entries.map((entry) => exerciseEntryToRow(entry, userId)), { onConflict: "id" });
+    if (error) {
+      console.error("Failed to save Exercise entries:", error);
+      return false;
+    }
+    return true;
+  } catch (error) {
+    console.error("Failed to save Exercise entries:", error);
+    return false;
+  }
+}
+
+async function upsertExerciseDay(
+  client: ExerciseSupabaseClient,
+  userId: string,
+  dateKey: string,
+  workout: string,
+  checklist: ChecklistItem[],
+) {
+  try {
+    const { data: existing, error: lookupError } = await client
+      .from("exercise_days")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("date", dateKey)
+      .maybeSingle();
+
+    if (lookupError) {
+      console.error("Failed to find Exercise day:", lookupError);
+      return false;
+    }
+
+    const id = existing?.id ?? (await stableExerciseDayId(userId, dateKey));
+    const { error } = await client.from("exercise_days").upsert(
+      {
+        id,
+        user_id: userId,
+        date: dateKey,
+        workout_name: workout,
+        checklist,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "id" },
+    );
+    if (error) {
+      console.error("Failed to save Exercise day:", error);
+      return false;
+    }
+    return true;
+  } catch (error) {
+    console.error("Failed to save Exercise day:", error);
+    return false;
+  }
+}
+
+async function fetchExerciseCloudData(client: ExerciseSupabaseClient, userId: string) {
+  try {
+    const [entriesResult, daysResult] = await Promise.all([
+      client.from("exercise_entries").select("*").eq("user_id", userId),
+      client.from("exercise_days").select("*").eq("user_id", userId),
+    ]);
+
+    if (entriesResult.error || daysResult.error) {
+      if (entriesResult.error) console.error("Failed to load Exercise entries:", entriesResult.error);
+      if (daysResult.error) console.error("Failed to load Exercise days:", daysResult.error);
+      return null;
+    }
+
+    return {
+      entries: (entriesResult.data ?? []) as ExerciseEntryRow[],
+      days: (daysResult.data ?? []) as ExerciseDayRow[],
+    };
+  } catch (error) {
+    console.error("Failed to load Exercise data:", error);
+    return null;
+  }
+}
+
+function exerciseDaysToState(days: ExerciseDayRow[]) {
+  const exerciseProgress: Record<string, ChecklistItem[]> = {};
+  const exerciseWorkouts: Record<string, string> = {};
+
+  for (const day of days) {
+    exerciseProgress[day.date] = day.checklist ?? [];
+    exerciseWorkouts[day.date] = day.workout_name;
+  }
+
+  return { exerciseProgress, exerciseWorkouts };
+}
+
+export function hydrateExerciseFromSupabase({ force = false }: { force?: boolean } = {}): Promise<void> {
+  if (exerciseHydrationPromise) return exerciseHydrationPromise;
+
+  exerciseHydrationPromise = queueExerciseWrite(async () => {
+    try {
+      const { client, userId } = await getExerciseAuthContext();
+      if (!client || !userId || (!force && exerciseHydratedUserId === userId)) return;
+
+      const cloudData = await fetchExerciseCloudData(client, userId);
+      if (!cloudData) return;
+
+      const localState = useExerciseStore.getState();
+      let entries = cloudData.entries;
+      let days = cloudData.days;
+
+      if (entries.length === 0 && localState.exercise.length > 0) {
+        if (!(await upsertExerciseEntries(client, userId, localState.exercise))) return;
+        const { data, error } = await client
+          .from("exercise_entries")
+          .select("*")
+          .eq("user_id", userId);
+        if (error || !data?.length) {
+          if (error) console.error("Failed to reload migrated Exercise entries:", error);
+          return;
+        }
+        entries = data as ExerciseEntryRow[];
+      }
+
+      if (days.length === 0) {
+        const dateKeys = Array.from(
+          new Set([
+            ...Object.keys(localState.exerciseProgress),
+            ...Object.keys(localState.exerciseWorkouts),
+          ]),
+        );
+
+        if (dateKeys.length > 0) {
+          const migratedDays = await Promise.all(
+            dateKeys.map(async (dateKey) => {
+              const id = await stableExerciseDayId(userId, dateKey);
+              return {
+                id,
+                user_id: userId,
+                date: dateKey,
+                workout_name: localState.exerciseWorkouts[dateKey] ?? "",
+                checklist: localState.exerciseProgress[dateKey] ?? [],
+                updated_at: new Date().toISOString(),
+              };
+            }),
+          );
+          const { error } = await client
+            .from("exercise_days")
+            .upsert(migratedDays, { onConflict: "id" });
+          if (error) {
+            console.error("Failed to migrate local Exercise days:", error);
+            return;
+          }
+
+          const { data, error: reloadError } = await client
+            .from("exercise_days")
+            .select("*")
+            .eq("user_id", userId);
+          if (reloadError || !data?.length) {
+            if (reloadError) console.error("Failed to reload migrated Exercise days:", reloadError);
+            return;
+          }
+          days = data as ExerciseDayRow[];
+        }
+      }
+
+      const dayState = exerciseDaysToState(days);
+      useExerciseStore.setState({
+        exercise: entries.map(exerciseEntryFromRow),
+        ...dayState,
+      });
+      exerciseHydratedUserId = userId;
+    } catch (error) {
+      console.error("Failed to hydrate Exercise from Supabase:", error);
+    }
+  }).finally(() => {
+    exerciseHydrationPromise = null;
+  });
+
+  return exerciseHydrationPromise;
+}
+
+export function refreshExerciseFromSupabase(): Promise<void> {
+  return queueExerciseWrite(async () => {
+    try {
+      const { client, userId } = await getExerciseAuthContext();
+      if (!client) {
+        await useExerciseStore.persist.rehydrate();
+        return;
+      }
+      if (!userId) return;
+
+      const cloudData = await fetchExerciseCloudData(client, userId);
+      if (!cloudData) return;
+
+      const dayState = exerciseDaysToState(cloudData.days);
+      useExerciseStore.setState({
+        exercise: cloudData.entries.map(exerciseEntryFromRow),
+        ...dayState,
+      });
+      exerciseHydratedUserId = userId;
+    } catch (error) {
+      console.error("Failed to refresh Exercise from Supabase:", error);
+    }
+  });
+}
+
 export const useExerciseStore = create<ExerciseState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       exercise: [],
       exerciseProgress: {},
       exerciseWorkouts: {},
-      addExercise: (entry) =>
-        set((state) => ({ exercise: [...state.exercise, { id: createId(), ...entry }] })),
+      addExercise: (input) =>
+        queueExerciseWrite(async () => {
+          const entry: ExerciseEntry = { id: createId(), ...input };
+          const { client, userId } = await getExerciseAuthContext();
+          if (client && (!userId || !(await upsertExerciseEntries(client, userId, [entry])))) {
+            return false;
+          }
+          set((state) => ({ exercise: [...state.exercise, entry] }));
+          return true;
+        }),
       updateExercise: (id, updates) =>
-        set((state) => ({
-          exercise: state.exercise.map((entry) =>
-            entry.id === id ? { ...entry, ...updates } : entry,
-          ),
-        })),
+        queueExerciseWrite(async () => {
+          const current = get().exercise.find((entry) => entry.id === id);
+          if (!current) return false;
+          const updated = { ...current, ...updates, id };
+          const { client, userId } = await getExerciseAuthContext();
+          if (client) {
+            if (!userId) return false;
+            const { error, data } = await client
+              .from("exercise_entries")
+              .update({
+                exercise: updated.exercise,
+                duration_minutes: updated.durationMinutes,
+                calories: updated.calories,
+                date: updated.date,
+                updated_at: new Date().toISOString(),
+              })
+              .eq("id", id)
+              .eq("user_id", userId)
+              .select("id")
+              .maybeSingle();
+            if (error || !data) {
+              if (error) console.error("Failed to update Exercise entry:", error);
+              return false;
+            }
+          }
+          set((state) => ({
+            exercise: state.exercise.map((entry) => (entry.id === id ? updated : entry)),
+          }));
+          return true;
+        }),
       deleteExercise: (id) =>
-        set((state) => ({ exercise: state.exercise.filter((entry) => entry.id !== id) })),
+        queueExerciseWrite(async () => {
+          const { client, userId } = await getExerciseAuthContext();
+          if (client) {
+            if (!userId) return false;
+            const { error } = await client
+              .from("exercise_entries")
+              .delete()
+              .eq("id", id)
+              .eq("user_id", userId);
+            if (error) {
+              console.error("Failed to delete Exercise entry:", error);
+              return false;
+            }
+          }
+          set((state) => ({ exercise: state.exercise.filter((entry) => entry.id !== id) }));
+          return true;
+        }),
+      saveExerciseDay: (dateKey, workout, checklist) =>
+        queueExerciseWrite(async () => {
+          const { client, userId } = await getExerciseAuthContext();
+          if (client && (!userId || !(await upsertExerciseDay(client, userId, dateKey, workout, checklist)))) {
+            return false;
+          }
+          set((state) => ({
+            exerciseWorkouts: { ...state.exerciseWorkouts, [dateKey]: workout },
+            exerciseProgress: { ...state.exerciseProgress, [dateKey]: checklist },
+          }));
+          return true;
+        }),
       setExerciseProgress: (dateKey, checklist) =>
-        set((state) => ({
-          exerciseProgress: {
-            ...state.exerciseProgress,
-            [dateKey]: checklist,
-          },
-        })),
+        get().saveExerciseDay(dateKey, get().exerciseWorkouts[dateKey] ?? "", checklist),
       setExerciseWorkout: (dateKey, workout) =>
-        set((state) => ({
-          exerciseWorkouts: {
-            ...state.exerciseWorkouts,
-            [dateKey]: workout,
-          },
-        })),
+        get().saveExerciseDay(dateKey, workout, get().exerciseProgress[dateKey] ?? []),
       toggleExerciseProgress: (dateKey, itemId) =>
-        set((state) => ({
-          exerciseProgress: {
-            ...state.exerciseProgress,
-            [dateKey]: (state.exerciseProgress[dateKey] ?? []).map((item) =>
-              item.id === itemId ? { ...item, completed: !item.completed } : item,
-            ),
-          },
-        })),
+        queueExerciseWrite(async () => {
+          const state = get();
+          const checklist = (state.exerciseProgress[dateKey] ?? []).map((item) =>
+            item.id === itemId ? { ...item, completed: !item.completed } : item,
+          );
+          const workout = state.exerciseWorkouts[dateKey] ?? "";
+          const { client, userId } = await getExerciseAuthContext();
+          if (client && (!userId || !(await upsertExerciseDay(client, userId, dateKey, workout, checklist)))) {
+            return false;
+          }
+          set((current) => ({
+            exerciseProgress: { ...current.exerciseProgress, [dateKey]: checklist },
+            exerciseWorkouts: { ...current.exerciseWorkouts, [dateKey]: workout },
+          }));
+          return true;
+        }),
     }),
     { name: "growthos_exercise", storage },
   ),

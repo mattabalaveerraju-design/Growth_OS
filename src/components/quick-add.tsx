@@ -182,12 +182,16 @@ export function QuickAddDialog({
       toast.success("Reading entry added");
     }
     if (activeTab === "Exercise") {
-      addExercise({
+      const saved = await addExercise({
         exercise: values.exercise.exercise.trim() || "Exercise",
         durationMinutes: Number(values.exercise.durationMinutes) || 0,
         calories: Number(values.exercise.calories) || 0,
         date: values.exercise.date,
       });
+      if (!saved) {
+        toast.error("Couldn't save this exercise entry. Please try again.");
+        return;
+      }
       toast.success("Exercise entry added");
     }
     if (activeTab === "Goal") {

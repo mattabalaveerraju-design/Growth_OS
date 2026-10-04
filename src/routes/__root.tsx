@@ -15,6 +15,7 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { getSupabaseClient } from "@/lib/supabase";
 import {
+  hydrateExerciseFromSupabase,
   hydrateFocusFromSupabase,
   hydrateTasksFromSupabase,
 } from "@/stores/useGrowthStores";
@@ -277,6 +278,7 @@ function RootComponent() {
       if (currentUser) {
         void hydrateTasksFromSupabase();
         void hydrateFocusFromSupabase();
+        void hydrateExerciseFromSupabase({ force: true });
       }
     };
 
@@ -299,6 +301,7 @@ function RootComponent() {
           if (active) {
             void hydrateTasksFromSupabase();
             void hydrateFocusFromSupabase();
+            void hydrateExerciseFromSupabase({ force: true });
           }
         }, 0);
       }

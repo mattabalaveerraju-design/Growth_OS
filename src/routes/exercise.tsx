@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { Activity, Check, ChevronLeft, Dumbbell, Pencil, Plus, Trash2 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
@@ -10,7 +10,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { useExerciseStore, type ChecklistItem } from "@/stores/useGrowthStores";
+import {
+  hydrateExerciseFromSupabase,
+  useExerciseStore,
+  type ChecklistItem,
+} from "@/stores/useGrowthStores";
 
 export const Route = createFileRoute("/exercise")({
   head: () => ({ meta: [{ title: "Exercise — GrowthOS" }] }),
@@ -103,19 +107,45 @@ const getWorkoutStatus = (checklist: ChecklistItem[]) => {
 function ExercisePage() {
   const exerciseProgress = useExerciseStore((state) => state.exerciseProgress);
   const exerciseWorkouts = useExerciseStore((state) => state.exerciseWorkouts ?? {});
-  const setExerciseProgress = useExerciseStore((state) => state.setExerciseProgress);
-  const setExerciseWorkout = useExerciseStore((state) => state.setExerciseWorkout);
+  const saveExerciseDay = useExerciseStore((state) => state.saveExerciseDay);
   const toggleExerciseProgress = useExerciseStore((state) => state.toggleExerciseProgress);
+  const [exerciseHydrated, setExerciseHydrated] = useState(false);
+  const seededDefaultDates = useRef(new Set<string>());
 
   const weeklyPlan = useMemo(() => buildWeeklyPlan(), []);
 
   useEffect(() => {
+    let active = true;
+    void hydrateExerciseFromSupabase().then(() => {
+      if (active) setExerciseHydrated(true);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!exerciseHydrated) return;
+    const currentState = useExerciseStore.getState();
     weeklyPlan.forEach((day) => {
-      if (!exerciseProgress[day.dateKey]) {
-        setExerciseProgress(day.dateKey, buildDefaultChecklist(day.items));
+      if (
+        !currentState.exerciseProgress[day.dateKey] &&
+        !seededDefaultDates.current.has(day.dateKey)
+      ) {
+        seededDefaultDates.current.add(day.dateKey);
+        void saveExerciseDay(
+          day.dateKey,
+          currentState.exerciseWorkouts[day.dateKey] || day.workout,
+          buildDefaultChecklist(day.items),
+        ).then((saved) => {
+          if (!saved) {
+            seededDefaultDates.current.delete(day.dateKey);
+            toast.error("Couldn't save the weekly workout. Please try again.");
+          }
+        });
       }
     });
-  }, [exerciseProgress, setExerciseProgress, weeklyPlan]);
+  }, [exerciseHydrated, exerciseProgress, saveExerciseDay, weeklyPlan]);
 
   const records = weeklyPlan.map((day) => {
     const checklist = exerciseProgress[day.dateKey] ?? buildDefaultChecklist(day.items);
@@ -123,7 +153,7 @@ function ExercisePage() {
 
     return {
       ...day,
-      workout: exerciseWorkouts[day.dateKey] ?? day.workout,
+      workout: exerciseWorkouts[day.dateKey] || day.workout,
       checklist,
       completed,
       status: getWorkoutStatus(checklist),
@@ -148,13 +178,17 @@ function ExercisePage() {
     setEditingDateKey(dateKey);
   };
 
-  const saveEditor = () => {
+  const saveEditor = async () => {
     if (!editingDateKey || !workoutDraft.trim()) return;
-    setExerciseWorkout(editingDateKey, workoutDraft.trim());
-    setExerciseProgress(
+    const saved = await saveExerciseDay(
       editingDateKey,
+      workoutDraft.trim(),
       checklistDraft.map((item) => ({ ...item, text: item.text.trim() })),
     );
+    if (!saved) {
+      toast.error("Couldn't save this workout. Please try again.");
+      return;
+    }
     setEditingDateKey(null);
   };
 
