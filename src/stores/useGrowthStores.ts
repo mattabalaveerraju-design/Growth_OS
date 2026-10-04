@@ -886,6 +886,7 @@ function focusToSupabase(item: FocusItem, userId: string) {
 
 let focusWriteQueue: Promise<void> = Promise.resolve();
 let focusHydrationPromise: Promise<void> | null = null;
+let focusHydratedUserId: string | null = null;
 
 function queueFocusWrite<T>(operation: () => Promise<T>) {
   const result = focusWriteQueue.then(operation, operation);
@@ -987,7 +988,7 @@ async function fetchFocusRows(userId: string) {
 export function hydrateFocusFromSupabase(): Promise<void> {
   if (focusHydrationPromise) return focusHydrationPromise;
 
-  focusHydrationPromise = (async () => {
+  focusHydrationPromise = queueFocusWrite(async () => {
     const supabase = getSupabaseClient();
     if (!supabase) return;
 
@@ -1000,18 +1001,21 @@ export function hydrateFocusFromSupabase(): Promise<void> {
         if (authError) console.error("Failed to get the authenticated user for Focus:", authError);
         return;
       }
+      if (focusHydratedUserId === user.id) return;
 
       const cloudItems = await fetchFocusRows(user.id);
       if (cloudItems === null) return;
 
       if (cloudItems.length > 0) {
         useFocusStore.setState({ focusItems: cloudItems.map(focusFromSupabase) });
+        focusHydratedUserId = user.id;
         return;
       }
 
       const localItems = useFocusStore.getState().focusItems;
       if (localItems.length === 0) {
         useFocusStore.setState({ focusItems: [] });
+        focusHydratedUserId = user.id;
         return;
       }
 
@@ -1029,36 +1033,40 @@ export function hydrateFocusFromSupabase(): Promise<void> {
       if (migratedItems === null || migratedItems.length === 0) return;
 
       useFocusStore.setState({ focusItems: migratedItems.map(focusFromSupabase) });
+      focusHydratedUserId = user.id;
     } catch (error) {
       console.error("Failed to hydrate Focus from Supabase:", error);
     }
-  })().finally(() => {
+  }).finally(() => {
     focusHydrationPromise = null;
   });
 
   return focusHydrationPromise;
 }
 
-export async function refreshFocusFromSupabase() {
-  const supabase = getSupabaseClient();
-  if (!supabase) return;
+export function refreshFocusFromSupabase(): Promise<void> {
+  return queueFocusWrite(async () => {
+    const supabase = getSupabaseClient();
+    if (!supabase) return;
 
-  try {
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-    if (authError || !user) {
-      if (authError) console.error("Failed to get the authenticated user for Focus:", authError);
-      return;
+    try {
+      const {
+        data: { user },
+        error: authError,
+      } = await supabase.auth.getUser();
+      if (authError || !user) {
+        if (authError) console.error("Failed to get the authenticated user for Focus:", authError);
+        return;
+      }
+
+      const cloudItems = await fetchFocusRows(user.id);
+      if (cloudItems === null) return;
+      useFocusStore.setState({ focusItems: cloudItems.map(focusFromSupabase) });
+      focusHydratedUserId = user.id;
+    } catch (error) {
+      console.error("Failed to refresh Focus from Supabase:", error);
     }
-
-    const cloudItems = await fetchFocusRows(user.id);
-    if (cloudItems === null) return;
-    useFocusStore.setState({ focusItems: cloudItems.map(focusFromSupabase) });
-  } catch (error) {
-    console.error("Failed to refresh Focus from Supabase:", error);
-  }
+  });
 }
 
 export const useFocusStore = create<FocusState>()(

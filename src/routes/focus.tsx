@@ -11,10 +11,8 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useEffect, useState } from "react";
 import { useFocusStore } from "@/stores/useGrowthStores";
-import { registerPageRefreshHandler } from "@/components/refresh-button";
 import {
   hydrateFocusFromSupabase,
-  refreshFocusFromSupabase,
 } from "@/stores/useGrowthStores";
 
 export const Route = createFileRoute("/focus")({
@@ -62,7 +60,6 @@ const createChecklistItem = (text = "") => ({
 function FocusPage() {
   useEffect(() => {
     void hydrateFocusFromSupabase();
-    return registerPageRefreshHandler(refreshFocusFromSupabase);
   }, []);
 
   const focusItemsRaw = useFocusStore((s) => s.focusItems);

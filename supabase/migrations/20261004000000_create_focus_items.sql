@@ -14,8 +14,8 @@ create table if not exists public.focus_items (
   updated_at timestamptz not null default now()
 );
 
-create index if not exists focus_items_user_id_order_idx
-  on public.focus_items (user_id, "order");
+create index if not exists focus_items_user_id_idx
+  on public.focus_items (user_id);
 
 alter table public.focus_items enable row level security;
 

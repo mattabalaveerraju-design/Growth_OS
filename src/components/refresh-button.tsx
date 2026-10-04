@@ -17,6 +17,7 @@ import {
   useSettingsStore,
   useTaskStore,
   useVaultStore,
+  refreshFocusFromSupabase,
   refreshTasksFromSupabase,
 } from "@/stores/useGrowthStores";
 
@@ -45,7 +46,6 @@ const refreshAllLocalStores = [
   () => useReadingStore.persist.rehydrate(),
   () => useExerciseStore.persist.rehydrate(),
   () => useFreelanceStore.persist.rehydrate(),
-  () => useFocusStore.persist.rehydrate(),
   () => useGoalStore.persist.rehydrate(),
   () => useSettingsStore.persist.rehydrate(),
 ];
@@ -62,9 +62,9 @@ function localRefreshersForPath(pathname: string) {
   if (pathname.startsWith("/jobs")) return [refreshAllLocalStores[6]];
   if (pathname.startsWith("/exercise")) return [refreshAllLocalStores[8]];
   if (pathname.startsWith("/freelancing")) return [refreshAllLocalStores[9]];
-  if (pathname.startsWith("/focus")) return [refreshAllLocalStores[10]];
-  if (pathname.startsWith("/goals")) return [refreshAllLocalStores[11]];
-  if (pathname.startsWith("/settings")) return [refreshAllLocalStores[12]];
+  if (pathname.startsWith("/focus")) return [];
+  if (pathname.startsWith("/goals")) return [refreshAllLocalStores[10]];
+  if (pathname.startsWith("/settings")) return [refreshAllLocalStores[11]];
   return [];
 }
 
@@ -85,6 +85,9 @@ export function RefreshButton() {
         pathname.startsWith("/analytics")
       ) {
         await refreshTasksFromSupabase({ force: true });
+      }
+      if (pathname.startsWith("/focus") || pathname === "/") {
+        await refreshFocusFromSupabase();
       }
       const detail: RefreshEventDetail = { promises: [] };
       window.dispatchEvent(new CustomEvent("growthos:refresh", { detail }));
