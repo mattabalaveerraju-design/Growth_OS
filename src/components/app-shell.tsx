@@ -119,6 +119,16 @@ export function AppShell({ children, title }: { children: ReactNode; title?: str
   const [importOpen, setImportOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
 
+  const handleSidebarLogout = async () => {
+    const globalWithLogout = globalThis as typeof globalThis & {
+      __growthos_handleLogout?: () => Promise<void>;
+    };
+
+    if (typeof globalWithLogout.__growthos_handleLogout === "function") {
+      await globalWithLogout.__growthos_handleLogout();
+    }
+  };
+
   return (
     <div className="min-h-screen w-full bg-surface text-ink">
       <Toaster position="bottom-right" />
@@ -204,6 +214,16 @@ export function AppShell({ children, title }: { children: ReactNode; title?: str
                   </Link>
                 );
               })}
+            </div>
+
+            <div className="mt-3 border-t border-sidebar-border pt-3">
+              <button
+                type="button"
+                onClick={handleSidebarLogout}
+                className="inline-flex w-full items-center justify-center rounded-[8px] border border-border bg-background px-3 py-2.5 text-[13px] font-medium text-ink-soft transition hover:bg-accent"
+              >
+                Log out
+              </button>
             </div>
 
             <div className="mt-3 flex items-center gap-2.5 rounded-[8px] border border-border/60 bg-muted/40 px-2.5 py-2.5">

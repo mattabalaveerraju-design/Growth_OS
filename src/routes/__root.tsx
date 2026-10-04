@@ -281,6 +281,10 @@ function RootComponent() {
     setAuthReady(true);
   };
 
+  useEffect(() => {
+    (globalThis as typeof globalThis & { __growthos_handleLogout?: () => Promise<void> }).__growthos_handleLogout = handleLogout;
+  }, [handleLogout]);
+
   if (!authReady) {
     return (
       <QueryClientProvider client={queryClient}>
@@ -306,20 +310,6 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <div className="border-b border-border bg-background/90 px-4 py-2">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3">
-          <div className="text-sm text-ink-soft">
-            Signed in as <span className="font-medium text-ink">{sessionUser.email ?? "Supabase user"}</span>
-          </div>
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="inline-flex items-center justify-center rounded-md border border-border bg-background px-3 py-1.5 text-sm font-medium text-ink-soft transition hover:bg-accent"
-          >
-            Log out
-          </button>
-        </div>
-      </div>
       <Outlet />
     </QueryClientProvider>
   );
