@@ -86,7 +86,6 @@ export function RefreshButton() {
       ) {
         await refreshTasksFromSupabase({ force: true });
       }
-
       const detail: RefreshEventDetail = { promises: [] };
       window.dispatchEvent(new CustomEvent("growthos:refresh", { detail }));
       await Promise.all(detail.promises);

@@ -14,7 +14,10 @@ import { Eye, EyeOff } from "lucide-react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { getSupabaseClient } from "@/lib/supabase";
-import { hydrateTasksFromSupabase } from "@/stores/useGrowthStores";
+import {
+  hydrateFocusFromSupabase,
+  hydrateTasksFromSupabase,
+} from "@/stores/useGrowthStores";
 
 function NotFoundComponent() {
   return (
@@ -273,6 +276,7 @@ function RootComponent() {
       setAuthReady(true);
       if (currentUser) {
         void hydrateTasksFromSupabase();
+        void hydrateFocusFromSupabase();
       }
     };
 
@@ -292,7 +296,10 @@ function RootComponent() {
       setAuthReady(true);
       if (session?.user) {
         window.setTimeout(() => {
-          if (active) void hydrateTasksFromSupabase();
+          if (active) {
+            void hydrateTasksFromSupabase();
+            void hydrateFocusFromSupabase();
+          }
         }, 0);
       }
     });

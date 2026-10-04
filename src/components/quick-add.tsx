@@ -131,7 +131,7 @@ export function QuickAddDialog({
 
   const title = useMemo(() => `${activeTab} Quick Add`, [activeTab]);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (activeTab === "Task") {
       addTask({
         title: values.task.title.trim() || "New Task",
@@ -205,7 +205,7 @@ export function QuickAddDialog({
       toast.success("Goal added");
     }
     if (activeTab === "Focus") {
-      addFocusItem({
+      const saved = await addFocusItem({
         title: values.focus.title.trim() || "Focus Task",
         category: values.focus.category || "General",
         startTime: values.focus.startTime,
@@ -214,6 +214,10 @@ export function QuickAddDialog({
         priority: values.focus.priority as FocusItem["priority"],
         description: values.focus.description,
       });
+      if (!saved) {
+        toast.error("Couldn't save focus item. Please try again.");
+        return;
+      }
       toast.success("Focus item added");
     }
     if (activeTab === "Interview") {

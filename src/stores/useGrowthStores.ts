@@ -312,11 +312,11 @@ interface FreelanceState {
 
 interface FocusState {
   focusItems: FocusItem[];
-  addFocusItem: (item: Omit<FocusItem, "id" | "order">) => void;
-  updateFocusItem: (id: string, updates: Partial<FocusItem>) => void;
-  deleteFocusItem: (id: string) => void;
-  reorderFocusItem: (fromIndex: number, toIndex: number) => void;
-  toggleFocusComplete: (id: string) => void;
+  addFocusItem: (item: Omit<FocusItem, "id" | "order">) => Promise<boolean>;
+  updateFocusItem: (id: string, updates: Partial<FocusItem>) => Promise<boolean>;
+  deleteFocusItem: (id: string) => Promise<boolean>;
+  reorderFocusItem: (fromIndex: number, toIndex: number) => Promise<boolean>;
+  toggleFocusComplete: (id: string) => Promise<boolean>;
 }
 
 interface GoalState {
@@ -838,57 +838,314 @@ export const useFreelanceStore = create<FreelanceState>()(
   ),
 );
 
+interface FocusRow {
+  id: string;
+  user_id: string;
+  title: string;
+  category: string;
+  start_time: string;
+  end_time: string;
+  status: FocusStatus;
+  priority: Priority;
+  description: string;
+  order: number;
+  checklist: ChecklistItem[] | null;
+}
+
+function focusFromSupabase(row: FocusRow): FocusItem {
+  return {
+    id: row.id,
+    title: row.title,
+    category: row.category,
+    startTime: row.start_time,
+    endTime: row.end_time,
+    status: row.status,
+    priority: row.priority,
+    description: row.description,
+    order: row.order,
+    checklist: row.checklist ?? [],
+  };
+}
+
+function focusToSupabase(item: FocusItem, userId: string) {
+  return {
+    id: item.id,
+    user_id: userId,
+    title: item.title,
+    category: item.category,
+    start_time: item.startTime,
+    end_time: item.endTime,
+    status: item.status,
+    priority: item.priority,
+    description: item.description,
+    order: item.order,
+    checklist: item.checklist ?? [],
+    updated_at: new Date().toISOString(),
+  };
+}
+
+let focusWriteQueue: Promise<void> = Promise.resolve();
+let focusHydrationPromise: Promise<void> | null = null;
+
+function queueFocusWrite<T>(operation: () => Promise<T>) {
+  const result = focusWriteQueue.then(operation, operation);
+  focusWriteQueue = result.then(
+    () => undefined,
+    () => undefined,
+  );
+  return result;
+}
+
+async function saveFocusRows(items: FocusItem[]) {
+  const supabase = getSupabaseClient();
+  if (!supabase) return true;
+
+  try {
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+    if (authError || !user) {
+      console.error("Unable to save Focus without an authenticated user:", authError);
+      return false;
+    }
+
+    const { error } = await supabase
+      .from("focus_items")
+      .upsert(items.map((item) => focusToSupabase(item, user.id)), { onConflict: "id" });
+    if (error) {
+      console.error("Failed to save Focus to Supabase:", error);
+      return false;
+    }
+    return true;
+  } catch (error) {
+    console.error("Failed to save Focus to Supabase:", error);
+    return false;
+  }
+}
+
+async function updateFocusRows(items: FocusItem[]) {
+  const supabase = getSupabaseClient();
+  if (!supabase) return true;
+
+  try {
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+    if (authError || !user) return false;
+
+    for (const item of items) {
+      const { error, data } = await supabase
+        .from("focus_items")
+        .update({
+          title: item.title,
+          category: item.category,
+          start_time: item.startTime,
+          end_time: item.endTime,
+          status: item.status,
+          priority: item.priority,
+          description: item.description,
+          order: item.order,
+          checklist: item.checklist ?? [],
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", item.id)
+        .eq("user_id", user.id)
+        .select("id")
+        .maybeSingle();
+
+      if (error || !data) {
+        if (error) console.error("Failed to update Focus in Supabase:", error);
+        return false;
+      }
+    }
+    return true;
+  } catch (error) {
+    console.error("Failed to update Focus in Supabase:", error);
+    return false;
+  }
+}
+
+async function fetchFocusRows(userId: string) {
+  const supabase = getSupabaseClient();
+  if (!supabase) return null;
+
+  const { data, error } = await supabase
+    .from("focus_items")
+    .select("*")
+    .eq("user_id", userId)
+    .order("order", { ascending: true });
+
+  if (error) {
+    console.error("Failed to load Focus from Supabase:", error);
+    return null;
+  }
+  return (data ?? []) as FocusRow[];
+}
+
+export function hydrateFocusFromSupabase(): Promise<void> {
+  if (focusHydrationPromise) return focusHydrationPromise;
+
+  focusHydrationPromise = (async () => {
+    const supabase = getSupabaseClient();
+    if (!supabase) return;
+
+    try {
+      const {
+        data: { user },
+        error: authError,
+      } = await supabase.auth.getUser();
+      if (authError || !user) {
+        if (authError) console.error("Failed to get the authenticated user for Focus:", authError);
+        return;
+      }
+
+      const cloudItems = await fetchFocusRows(user.id);
+      if (cloudItems === null) return;
+
+      if (cloudItems.length > 0) {
+        useFocusStore.setState({ focusItems: cloudItems.map(focusFromSupabase) });
+        return;
+      }
+
+      const localItems = useFocusStore.getState().focusItems;
+      if (localItems.length === 0) {
+        useFocusStore.setState({ focusItems: [] });
+        return;
+      }
+
+      const { error: migrationError } = await supabase
+        .from("focus_items")
+        .upsert(localItems.map((item) => focusToSupabase(item, user.id)), {
+          onConflict: "id",
+        });
+      if (migrationError) {
+        console.error("Failed to migrate local Focus items:", migrationError);
+        return;
+      }
+
+      const migratedItems = await fetchFocusRows(user.id);
+      if (migratedItems === null || migratedItems.length === 0) return;
+
+      useFocusStore.setState({ focusItems: migratedItems.map(focusFromSupabase) });
+    } catch (error) {
+      console.error("Failed to hydrate Focus from Supabase:", error);
+    }
+  })().finally(() => {
+    focusHydrationPromise = null;
+  });
+
+  return focusHydrationPromise;
+}
+
+export async function refreshFocusFromSupabase() {
+  const supabase = getSupabaseClient();
+  if (!supabase) return;
+
+  try {
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+    if (authError || !user) {
+      if (authError) console.error("Failed to get the authenticated user for Focus:", authError);
+      return;
+    }
+
+    const cloudItems = await fetchFocusRows(user.id);
+    if (cloudItems === null) return;
+    useFocusStore.setState({ focusItems: cloudItems.map(focusFromSupabase) });
+  } catch (error) {
+    console.error("Failed to refresh Focus from Supabase:", error);
+  }
+}
+
 export const useFocusStore = create<FocusState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       focusItems: [],
-      addFocusItem: (item) =>
-        set((state) => ({
-          focusItems: [
-            ...state.focusItems,
-            { id: createId(), order: state.focusItems.length, ...item },
-          ],
-        })),
-      updateFocusItem: (id, updates) =>
-        set((state) => ({
-          focusItems: state.focusItems.map((item) =>
-            item.id === id
-              ? {
-                  ...item,
-                  ...updates,
-                }
-              : item,
-          ),
-        })),
-      deleteFocusItem: (id) =>
-        set((state) => ({
-          focusItems: state.focusItems
-            .filter((item) => item.id !== id)
-            .map((item, index) => ({ ...item, order: index })),
-        })),
-      reorderFocusItem: (fromIndex, toIndex) =>
-        set((state) => {
-          const items = [...state.focusItems].sort((a, b) => a.order - b.order);
-          const [moved] = items.splice(fromIndex, 1);
-          if (!moved) return { focusItems: state.focusItems };
-          items.splice(toIndex, 0, moved);
-          return { focusItems: items.map((item, index) => ({ ...item, order: index })) };
+      addFocusItem: (input) =>
+        queueFocusWrite(async () => {
+          const item: FocusItem = {
+            id: createId(),
+            order: get().focusItems.length,
+            ...input,
+          };
+          if (!(await saveFocusRows([item]))) return false;
+          set((state) => ({ focusItems: [...state.focusItems, item] }));
+          return true;
         }),
-      toggleFocusComplete: (id) =>
-        set((state) => ({
-          focusItems: state.focusItems.map((item) =>
-            item.id === id
-              ? {
-                  ...item,
-                  status: item.status === "Completed" ? "Planned" : "Completed",
-                }
-              : item,
-          ),
-        })),
+      updateFocusItem: (id, updates) =>
+        queueFocusWrite(async () => {
+          const current = get().focusItems.find((item) => item.id === id);
+          if (!current) return false;
+          const updated = { ...current, ...updates };
+          if (!(await updateFocusRows([updated]))) return false;
+          set((state) => ({
+            focusItems: state.focusItems.map((item) => (item.id === id ? updated : item)),
+          }));
+          return true;
+        }),
+      deleteFocusItem: (id) =>
+        queueFocusWrite(async () => {
+          const existing = get().focusItems;
+          if (!existing.some((item) => item.id === id)) return false;
+
+          const supabase = getSupabaseClient();
+          if (supabase) {
+            try {
+              const {
+                data: { user },
+                error: authError,
+              } = await supabase.auth.getUser();
+              if (authError || !user) return false;
+
+              const { error } = await supabase
+                .from("focus_items")
+                .delete()
+                .eq("id", id)
+                .eq("user_id", user.id);
+              if (error) {
+                console.error("Failed to delete Focus item from Supabase:", error);
+                return false;
+              }
+            } catch (error) {
+              console.error("Failed to delete Focus item from Supabase:", error);
+              return false;
+            }
+          }
+
+          const nextItems = existing
+            .filter((item) => item.id !== id)
+            .map((item, index) => ({ ...item, order: index }));
+          if (supabase && nextItems.length > 0 && !(await updateFocusRows(nextItems))) return false;
+          set({ focusItems: nextItems });
+          return true;
+        }),
+      reorderFocusItem: (fromIndex, toIndex) =>
+        queueFocusWrite(async () => {
+          const items = [...get().focusItems].sort((a, b) => a.order - b.order);
+          const [moved] = items.splice(fromIndex, 1);
+          if (!moved) return false;
+          items.splice(toIndex, 0, moved);
+          const nextItems = items.map((item, index) => ({ ...item, order: index }));
+          if (!(await updateFocusRows(nextItems))) return false;
+          set({ focusItems: nextItems });
+          return true;
+        }),
+      toggleFocusComplete: (id) => {
+        const item = get().focusItems.find((entry) => entry.id === id);
+        if (!item) return Promise.resolve(false);
+        return get().updateFocusItem(id, {
+          status: item.status === "Completed" ? "Planned" : "Completed",
+        });
+      },
     }),
     { name: "growthos_focus", storage },
   ),
 );
+
 
 export const useGoalStore = create<GoalState>()(
   persist(

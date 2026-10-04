@@ -9,8 +9,13 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useFocusStore } from "@/stores/useGrowthStores";
+import { registerPageRefreshHandler } from "@/components/refresh-button";
+import {
+  hydrateFocusFromSupabase,
+  refreshFocusFromSupabase,
+} from "@/stores/useGrowthStores";
 
 export const Route = createFileRoute("/focus")({
   head: () => ({ meta: [{ title: "Focus Mode — GrowthOS" }] }),
@@ -55,6 +60,11 @@ const createChecklistItem = (text = "") => ({
 });
 
 function FocusPage() {
+  useEffect(() => {
+    void hydrateFocusFromSupabase();
+    return registerPageRefreshHandler(refreshFocusFromSupabase);
+  }, []);
+
   const focusItemsRaw = useFocusStore((s) => s.focusItems);
   const focusItems = [...focusItemsRaw].sort((a, b) => a.order - b.order);
   const addFocusItem = useFocusStore((s) => s.addFocusItem);
@@ -98,8 +108,9 @@ function FocusPage() {
           <button
             type="button"
             className="inline-flex items-center gap-2 rounded-[14px] bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 transition-colors"
-            onClick={() =>
-              addFocusItem({
+            onClick={async () => {
+              setSaving(true);
+              const saved = await addFocusItem({
                 title: "New focus item",
                 category: "General",
                 startTime: "09:00",
@@ -108,8 +119,11 @@ function FocusPage() {
                 priority: "Medium",
                 description: "",
                 checklist: [],
-              })
-            }
+              });
+              setSaving(false);
+              if (!saved) toast.error("Couldn't save focus item. Please try again.");
+            }}
+            disabled={saving}
           >
             <Plus className="h-4 w-4" /> Add focus item
           </button>
@@ -187,7 +201,10 @@ function FocusPage() {
                               <button
                                 type="button"
                                 className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-background text-ink-soft hover:text-ink transition-colors"
-                                onClick={() => deleteFocusItem(item.id)}
+                                onClick={async () => {
+                                  const deleted = await deleteFocusItem(item.id);
+                                  if (!deleted) toast.error("Couldn't delete focus item. Please try again.");
+                                }}
                                 aria-label="Delete item"
                               >
                                 <Trash className="h-4 w-4" />
@@ -216,7 +233,7 @@ function FocusPage() {
                                   }
                                   try {
                                     setSaving(true);
-                                    updateFocusItem(item.id, {
+                                    const updated = await updateFocusItem(item.id, {
                                       title: form.title,
                                       category: form.category,
                                       startTime: form.startTime,
@@ -225,6 +242,9 @@ function FocusPage() {
                                       status: form.status as (typeof statuses)[number],
                                       description: form.description,
                                     });
+                                    if (!updated) {
+                                      throw new Error("Couldn't save focus item. Please try again.");
+                                    }
                                     setSaving(false);
                                     setEditingId(null);
                                     toast.success("Focus updated successfully");
@@ -462,7 +482,9 @@ function FocusPage() {
                           <button
                             type="button"
                             className="inline-flex items-center gap-2 text-primary hover:text-primary/80"
-                            onClick={() => reorderFocusItem(index, Math.max(0, index - 1))}
+                            onClick={() => {
+                              void reorderFocusItem(index, Math.max(0, index - 1));
+                            }}
                             disabled={index === 0}
                           >
                             <GripVertical className="h-4 w-4" /> Move up
