@@ -3,6 +3,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { Plus, Search, Trash2 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { registerPageRefreshHandler } from "@/components/refresh-button";
 import { SelectControl } from "@/components/form-controls";
 import {
   Dialog,
@@ -87,23 +88,30 @@ function KnowledgePage() {
   const [existingFiles, setExistingFiles] = useState<CloudFileRecord[]>([]);
 
   useEffect(() => {
-    if (!hasSupabaseConfig) {
-      setCloudEnabled(false);
-      setCloudStatus("Cloud sync not configured");
-      return;
-    }
-
     let active = true;
-    setCloudEnabled(true);
-    setCloudStatus("Connecting to cloud workspace...");
-    listCloudCards("knowledge").then((cards) => {
+
+    const refreshCloudItems = async () => {
+      if (!hasSupabaseConfig) {
+        setCloudEnabled(false);
+        setCloudStatus("Cloud sync not configured");
+        return;
+      }
+
+      setCloudEnabled(true);
+      setCloudStatus("Connecting to cloud workspace...");
+      const cards = await listCloudCards("knowledge");
       if (!active) return;
       setCloudItems(cards);
+      useVaultStore.setState({ vault: cards.map(mapCloudCardToVault) });
       setCloudStatus(cards.length ? "Cloud sync ready" : "Cloud sync ready — add your first note");
-    });
+    };
+
+    void refreshCloudItems();
+    const unregisterRefreshHandler = registerPageRefreshHandler(refreshCloudItems);
 
     return () => {
       active = false;
+      unregisterRefreshHandler();
     };
   }, []);
 

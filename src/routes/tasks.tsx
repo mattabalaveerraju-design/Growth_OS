@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import {
@@ -31,7 +31,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { useTaskStore, useDailyChecklistStore, TaskItem } from "@/stores/useGrowthStores";
+import {
+  useTaskStore,
+  useDailyChecklistStore,
+  TaskItem,
+  refreshTasksFromSupabase,
+} from "@/stores/useGrowthStores";
 
 export const Route = createFileRoute("/tasks")({
   head: () => ({ meta: [{ title: "Tasks — GrowthOS" }] }),
@@ -100,6 +105,10 @@ const priorityDot: Record<Task["priority"], string> = {
 };
 
 function TasksPage() {
+  useEffect(() => {
+    void refreshTasksFromSupabase();
+  }, []);
+
   const tasks = useTaskStore((s) => s.tasks) as TaskItem[];
   const addTask = useTaskStore((s) => s.addTask);
   const updateTask = useTaskStore((s) => s.updateTask);

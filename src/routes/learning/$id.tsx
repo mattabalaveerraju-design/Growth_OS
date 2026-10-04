@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, useNavigate, useParams } from "@tanstack/react-router";
 import { ArrowLeft, FileText, Loader2 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { registerPageRefreshHandler } from "@/components/refresh-button";
 import { EmptyState } from "@/components/empty-state";
 import { ResourceDetail } from "@/components/resource-detail";
 import { ResourcePreview } from "@/components/resource-preview";
@@ -51,11 +52,23 @@ function LearningDetailPage() {
         const cards = await listCloudCards("learning");
         const found = cards.find((card) => card.id === id);
         if (!active) return;
+        useLearningStore.setState({ learning: cards.map((card) => ({
+          id: card.id,
+          topic: card.title,
+          category: typeof card.category === "string" ? card.category : "Career",
+          source: typeof card.summary === "string" ? card.summary : "",
+          timeHours: Number(card.metadata?.timeHours ?? 0),
+          notes: typeof card.content === "string" ? card.content : "",
+          confidence: Number(card.metadata?.confidence ?? 50),
+          date: String(card.metadata?.date ?? card.created_at?.slice(0, 10) ?? new Date().toISOString().slice(0, 10)),
+        })) });
         setCloudItem(found ? mapCloudCardToResourceItem(found, "learning") : null);
         if (found) {
           const cloudFiles = await listCloudFiles("learning", found.id);
           if (!active) return;
           setFiles(cloudFiles.map(mapCloudFileToResourceFileItem));
+        } else {
+          setFiles([]);
         }
       } else {
         setCloudItem(null);
@@ -65,8 +78,10 @@ function LearningDetailPage() {
     };
 
     load();
+    const unregisterRefreshHandler = registerPageRefreshHandler(load);
     return () => {
       active = false;
+      unregisterRefreshHandler();
     };
   }, [id]);
 

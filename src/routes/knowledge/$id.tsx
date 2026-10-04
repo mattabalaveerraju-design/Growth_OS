@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, useNavigate, useParams } from "@tanstack/react-router";
 import { ArrowLeft, FileText, Loader2 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { registerPageRefreshHandler } from "@/components/refresh-button";
 import { EmptyState } from "@/components/empty-state";
 import { ResourceDetail } from "@/components/resource-detail";
 import { ResourcePreview } from "@/components/resource-preview";
@@ -48,11 +49,22 @@ function KnowledgeDetailPage() {
         const cards = await listCloudCards("knowledge");
         const found = cards.find((card) => card.id === id);
         if (!active) return;
+        useVaultStore.setState({ vault: cards.map((card) => ({
+          id: card.id,
+          title: card.title,
+          type: card.metadata?.type === "file" ? "file" : "note",
+          filename: typeof card.metadata?.filename === "string" ? card.metadata.filename : undefined,
+          url: typeof card.metadata?.url === "string" ? card.metadata.url : undefined,
+          content: typeof card.content === "string" ? card.content : undefined,
+          createdAt: card.created_at ?? new Date().toISOString(),
+        })) });
         setCloudItem(found ? mapCloudCardToResourceItem(found, "knowledge") : null);
         if (found) {
           const cloudFiles = await listCloudFiles("knowledge", found.id);
           if (!active) return;
           setFiles(cloudFiles.map(mapCloudFileToResourceFileItem));
+        } else {
+          setFiles([]);
         }
       } else {
         setCloudItem(null);
@@ -62,8 +74,10 @@ function KnowledgeDetailPage() {
     };
 
     load();
+    const unregisterRefreshHandler = registerPageRefreshHandler(load);
     return () => {
       active = false;
+      unregisterRefreshHandler();
     };
   }, [id]);
 

@@ -448,8 +448,10 @@ export const useTaskStore = create<TaskState>()(
 
 let taskHydrationComplete = false;
 let taskHydrationPromise: Promise<void> | null = null;
+let taskRefreshPromise: Promise<void> | null = null;
+let lastTaskFetchAt = 0;
 
-function hydrateTasksFromSupabase(): Promise<void> {
+export function hydrateTasksFromSupabase(): Promise<void> {
   if (taskHydrationComplete) return Promise.resolve();
   if (taskHydrationPromise) return taskHydrationPromise;
 
@@ -458,6 +460,13 @@ function hydrateTasksFromSupabase(): Promise<void> {
 
   taskHydrationPromise = (async () => {
     try {
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) {
+        console.error("Failed to restore the Tasks auth session:", sessionError);
+        return;
+      }
+      if (!sessionData.session) return;
+
       const {
         data: { user },
         error: userError,
@@ -484,12 +493,15 @@ function hydrateTasksFromSupabase(): Promise<void> {
         useTaskStore.setState({
           tasks: cloudTasks.map((task) => taskFromSupabase(task as SupabaseTaskRow)),
         });
+        lastTaskFetchAt = Date.now();
         taskHydrationComplete = true;
         return;
       }
 
       const localTasks = useTaskStore.getState().tasks;
       if (localTasks.length === 0) {
+        useTaskStore.setState({ tasks: [] });
+        lastTaskFetchAt = Date.now();
         taskHydrationComplete = true;
         return;
       }
@@ -521,6 +533,7 @@ function hydrateTasksFromSupabase(): Promise<void> {
         });
       }
 
+      lastTaskFetchAt = Date.now();
       taskHydrationComplete = true;
     } catch (error) {
       console.error("Failed to hydrate Tasks from Supabase:", error);
@@ -530,6 +543,65 @@ function hydrateTasksFromSupabase(): Promise<void> {
   })();
 
   return taskHydrationPromise;
+}
+
+export function refreshTasksFromSupabase(
+  { force = false }: { force?: boolean } = {},
+): Promise<void> {
+  if (!force && taskHydrationPromise) {
+    return taskHydrationPromise.then(() => {
+      if (Date.now() - lastTaskFetchAt < 10_000) return;
+      return refreshTasksFromSupabase({ force: true });
+    });
+  }
+
+  if (!force && Date.now() - lastTaskFetchAt < 10_000) {
+    return Promise.resolve();
+  }
+
+  if (taskRefreshPromise) return taskRefreshPromise;
+
+  taskRefreshPromise = (async () => {
+    const supabase = getSupabaseClient();
+    if (!supabase) return;
+
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError) {
+      console.error("Failed to restore the Tasks auth session:", sessionError);
+      return;
+    }
+    if (!sessionData.session) return;
+
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError) {
+      console.error("Failed to get the authenticated user for Tasks:", userError);
+      return;
+    }
+    if (!user) return;
+
+    const { data: cloudTasks, error } = await supabase
+      .from("tasks")
+      .select("*")
+      .eq("user_id", user.id);
+
+    if (error) {
+      console.error("Failed to refresh Tasks from Supabase:", error);
+      return;
+    }
+
+    useTaskStore.setState({
+      tasks: (cloudTasks ?? []).map((task) => taskFromSupabase(task as SupabaseTaskRow)),
+    });
+    lastTaskFetchAt = Date.now();
+  })().finally(() => {
+    taskRefreshPromise = null;
+  });
+
+  return taskRefreshPromise;
 }
 
 if (typeof window !== "undefined") {

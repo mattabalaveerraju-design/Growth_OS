@@ -57,6 +57,7 @@ import {
   UploadCloud,
   Download,
   Menu,
+  LogOut,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
@@ -66,6 +67,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { QuickAddDialog } from "@/components/quick-add";
 import { ImportCenterDialog } from "@/components/import-center";
 import { ExportCenterDialog } from "@/components/export-center";
+import { RefreshButton } from "@/components/refresh-button";
 import { Toaster } from "@/components/ui/sonner";
 
 const navGroups = [
@@ -315,6 +317,16 @@ export function AppShell({ children, title }: { children: ReactNode; title?: str
                       })}
                     </div>
                   </nav>
+                  <div className="shrink-0 border-t border-border p-3">
+                    <button
+                      type="button"
+                      onClick={handleSidebarLogout}
+                      className="flex w-full items-center gap-3 rounded-[8px] px-3 py-2.5 text-[13px] font-medium text-ink-soft transition-colors hover:bg-sidebar-accent/60 hover:text-ink active:bg-sidebar-accent"
+                    >
+                      <LogOut className="h-4 w-4 shrink-0" />
+                      <span>Logout</span>
+                    </button>
+                  </div>
                 </SheetContent>
               </Sheet>
 
@@ -323,6 +335,9 @@ export function AppShell({ children, title }: { children: ReactNode; title?: str
                   {title.toUpperCase()}
                 </div>
               )}
+            </div>
+            <div className="ml-auto flex items-center gap-2 lg:hidden">
+              <RefreshButton />
             </div>
             <div className="ml-auto hidden items-center gap-2 lg:flex">
               <Button
@@ -354,6 +369,8 @@ export function AppShell({ children, title }: { children: ReactNode; title?: str
   <Download className="h-3.5 w-3.5" />
   Export
 </Button>
+
+<RefreshButton />
             </div>
           </header>
 

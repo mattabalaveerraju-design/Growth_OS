@@ -12,6 +12,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { registerPageRefreshHandler } from "@/components/refresh-button";
 import { DateControl, SelectControl } from "@/components/form-controls";
 import {
   Dialog,
@@ -112,23 +113,30 @@ function LearningPage() {
   const [existingFiles, setExistingFiles] = useState<CloudFileRecord[]>([]);
 
   useEffect(() => {
-    if (!hasSupabaseConfig) {
-      setCloudEnabled(false);
-      setCloudStatus("Cloud sync not configured");
-      return;
-    }
-
     let active = true;
-    setCloudEnabled(true);
-    setCloudStatus("Connecting to cloud workspace...");
-    listCloudCards("learning").then((cards) => {
+
+    const refreshCloudItems = async () => {
+      if (!hasSupabaseConfig) {
+        setCloudEnabled(false);
+        setCloudStatus("Cloud sync not configured");
+        return;
+      }
+
+      setCloudEnabled(true);
+      setCloudStatus("Connecting to cloud workspace...");
+      const cards = await listCloudCards("learning");
       if (!active) return;
       setCloudItems(cards);
+      useLearningStore.setState({ learning: cards.map(mapCloudCardToLearning) });
       setCloudStatus(cards.length ? "Cloud sync ready" : "Cloud sync ready — add your first card");
-    });
+    };
+
+    void refreshCloudItems();
+    const unregisterRefreshHandler = registerPageRefreshHandler(refreshCloudItems);
 
     return () => {
       active = false;
+      unregisterRefreshHandler();
     };
   }, []);
 

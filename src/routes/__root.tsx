@@ -14,6 +14,7 @@ import { Eye, EyeOff } from "lucide-react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { getSupabaseClient } from "@/lib/supabase";
+import { hydrateTasksFromSupabase } from "@/stores/useGrowthStores";
 
 function NotFoundComponent() {
   return (
@@ -258,10 +259,21 @@ function RootComponent() {
 
     const syncSession = async () => {
       const { data: sessionData } = await client.auth.getSession();
-      const { data: userData } = await client.auth.getUser();
+      let currentUser = sessionData.session?.user ?? null;
+      if (currentUser) {
+        try {
+          const { data: userData, error: userError } = await client.auth.getUser();
+          if (!userError) currentUser = userData.user ?? currentUser;
+        } catch (error) {
+          console.error("Failed to restore the authenticated user:", error);
+        }
+      }
       if (!active) return;
-      setSessionUser(userData.user ?? sessionData.session?.user ?? null);
+      setSessionUser(currentUser);
       setAuthReady(true);
+      if (currentUser) {
+        void hydrateTasksFromSupabase();
+      }
     };
 
     void syncSession();
@@ -278,6 +290,11 @@ function RootComponent() {
 
       setSessionUser(session?.user ?? null);
       setAuthReady(true);
+      if (session?.user) {
+        window.setTimeout(() => {
+          if (active) void hydrateTasksFromSupabase();
+        }, 0);
+      }
     });
 
     return () => {
